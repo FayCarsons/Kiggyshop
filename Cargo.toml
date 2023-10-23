@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "backend",
+    "frontend",
+    
+    "common"
+]
+default-members = ["backend"]
+resolver = "2"
