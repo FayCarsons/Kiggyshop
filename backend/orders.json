@@ -1,4 +1,4 @@
-{"orders": [
+[
     {
       "name": ["Gay", "Carsons"],
       "street": "420 butthole ln",
@@ -31,4 +31,4 @@
       ]},
       "fulfilled": false
     }
-  ]}
+]

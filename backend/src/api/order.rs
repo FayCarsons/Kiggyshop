@@ -1,73 +1,77 @@
 use actix_web::{
     get, put,
-    web::{Json, Path},
+    web::{self, Json, Path},
     HttpResponse,
 };
-use common::{order::Order, OrderList};
-use serde::Deserialize;
-use std::{
-    fs::{File, OpenOptions},
-    io::{Read, Write},
+use common::{
+    cart::NewCart,
+    order::{NewOrder, Order, OrderFilter},
+    schema::{carts, orders::{self, fulfilled}},
 };
+use diesel::prelude::*;
 
-#[derive(Deserialize)]
-enum OrderFilter {
-    All,
-    Unfulfilled,
-    Fulfilled,
+use crate::{error::{BackendError, ShopResult}, DbPool};
+
+#[put("/order/put")]
+pub async fn new_order(
+    pool: web::Data<DbPool>,
+    order: web::Json<Order>,
+) -> ShopResult<HttpResponse> {
+
+    // STRIPE IMPLEMENTATION GOES HERE
+    // FOLLOWED BY EMAILS VA SMTP TO BOTH CUSTOMER && Kristen
+
+    web::block(move || {
+        let order = order.into_inner().clone();
+        let order = NewOrder {
+            name: &order.name,
+            street: &order.street,
+            zipcode: order.zipcode,
+            fulfilled: order.fulfilled,
+        };
+        let mut conn = pool.get().unwrap();
+        let inserted_id = diesel::insert_into(orders::table)
+            .values(&order)
+            .returning(orders::dsl::id)
+            .get_result::<i32>(&mut conn)
+            .unwrap();
+        let new_carts = [
+            NewCart {
+                order_id: inserted_id,
+                item_name: "cat",
+                quantity: 420,
+            },
+            NewCart {
+                order_id: inserted_id,
+                item_name: "bunny",
+                quantity: 69,
+            },
+        ];
+        diesel::insert_into(carts::table)
+            .values(&new_carts)
+            .execute(&mut conn)
+            .unwrap();
+    })
+    .await
+    .unwrap();
+
+    Ok(HttpResponse::Ok().finish())
 }
 
-#[get("/orders/{filter}")]
-pub async fn get_orders(filter: Path<OrderFilter>) -> HttpResponse {
-    let mut file = File::open("orders.json").expect("CANNOT FIND ORDERS.JSON");
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer)
-        .expect("CANNOT WRITE FILE TO BUFFER");
+#[get("/orders/get/{filter}")]
+pub async fn get_orders(pool: web::Data<DbPool>, filter: Path<OrderFilter>) -> ShopResult<HttpResponse> {
+    let filter = filter.into_inner();
 
-    let orders: OrderList = serde_json::from_str(&buffer).expect("CANNOT DESERIALIZE ORDERS");
+    let orders: Vec<Order> = web::block(move || {
+        let mut conn = pool.get().unwrap();
 
-    let res = match filter.into_inner() {
-        OrderFilter::All => orders.orders,
-        OrderFilter::Fulfilled => orders
-            .orders
-            .into_iter()
-            .filter(|order| order.fulfilled)
-            .collect(),
-        OrderFilter::Unfulfilled => orders
-            .orders
-            .into_iter()
-            .filter(|order| !order.fulfilled)
-            .collect(),
-    };
+        match filter {
+            OrderFilter::All => orders::table.select(Order::as_select()).get_results(&mut conn).unwrap(),
+            OrderFilter::Fulfilled => orders::table.select(Order::as_select()).filter(fulfilled.eq(true)).get_results(&mut conn).unwrap(),
+            OrderFilter::Unfulfilled => orders::table.select(Order::as_select()).filter(fulfilled.eq(false)).get_results(&mut conn).unwrap()
+        }
+    }).await.unwrap();
 
-    let body = serde_json::to_string_pretty(&OrderList::from(res))
-        .expect("CANNOT RESERIALIZE UNfulfilled ORDERS");
-    HttpResponse::Ok().content_type("text/json").body(body)
-}
-
-#[put("/orders/new")]
-pub async fn put_order(order: Json<Order>) -> HttpResponse {
-    let mut file = File::open("orders.json").expect("CANNOT FIND ORDERS.JSON");
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer);
-
-    let old: OrderList = serde_json::from_str(&buffer).expect("CANNOT PARSE ORDERS FOR PUT");
-
-    let new = OrderList::from(
-        old.orders
-            .into_iter()
-            .chain(std::iter::once(order.into_inner()))
-            .collect::<Vec<Order>>(),
-    );
-
-    let ser = serde_json::to_string_pretty(&new).expect("CANNOT RESERIALIZE ORDERS FOR PUT");
-    let mut new_data = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open("orders.json")
-        .expect("CANNOT WRITE NEW ORDERS.JSON FOR PUT");
-    new_data
-        .write(ser.as_bytes())
-        .expect("CANNOT WRITE UPDATED ORDERS TO FILE FOR PUT");
-    HttpResponse::Ok().body("")
+    let json = serde_json::to_string(&orders).unwrap();
+    Ok(HttpResponse::Ok().content_type("text/json").body(json))
 }

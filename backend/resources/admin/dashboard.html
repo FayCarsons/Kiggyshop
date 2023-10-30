@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/admin/dashboard/style.css">
+    <title>Dashboard</title>
+</head>
+
+<body>
+    <h1>Dashboard</h1>
+
+    <!-- Navigation Tabs -->
+    <div>
+        <button onclick="showTab('stock')">Stock</button>
+        <button onclick="showTab('orders')">Orders</button>
+    </div>
+
+    <!-- Stock Tab Content -->
+    <div id="stockTab" style="display: none;">
+        <h2>Stock</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                </tr>
+            </thead>
+            <tbody id="stockList">
+                <!-- Stock items will be dynamically added here -->
+            </tbody>
+        </table>
+        <button onclick="deleteSelectedStock">Delete Selected</button>
+        <button onclick="addStock">Add Item</button>
+    </div>
+
+    <!-- Orders Tab Content -->
+    <div id="ordersTab" style="display: none;">
+        <h2>Orders</h2>
+        <label>
+            Filter:
+            <select id="orderFilter">
+                <option value="All">All</option>
+                <option value="Fulfilled">Fulfilled</option>
+                <option value="Unfulfilled">Unfulfilled</option>
+            </select>
+        </label>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Street</th>
+                    <th>Zip</th>
+                    <th>Fulfilled</th>
+                </tr>
+            </thead>
+            <tbody id="orderList">
+                <!-- Orders will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- JavaScript to handle tab switching and actions -->
+    <script>
+        const orderFilterDropDown = document.getElementById("orderFilter")
+        orderFilterDropDown.addEventListener('change', () => {
+            showOrders(orderFilterDropDown.value)
+        })
+
+        function showTab(tabName) {
+            tabName = tabName.trim()
+            var tabs = document.querySelectorAll('[id$="Tab"]');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].style.display = 'none';
+            }
+
+            document.getElementById(tabName + 'Tab').style.display = 'block';
+            if (tabName === 'stock') {
+                console.clear()
+                showStock()
+            } else if (tabName === 'orders') {
+                console.clear()
+                showOrders("All")
+            }
+        }
+
+        function showStock() {
+            fetch("/api/stock/get", {
+                method: 'GET',
+                headers: {
+                    'Content-type': 'application/json'
+                },
+            })
+            .then(res => {
+                return res.json()
+            })
+            .then(data => {
+                const stockList = document.getElementById('stockList')
+                stockList.innerHTML = ''
+
+                data.forEach(item => {
+                    const row = document.createElement('tr')
+                    row.innerHTML = `
+                    <td><input type="checkbox" id="${item.title}"></td>
+                    <td>${item.title.toUpperCase()}</td>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td><button onclick="editItem(${item.id})">Edit</button></td>
+                `
+                stockList.appendChild(row)
+                })   
+            })
+            .catch(err => {
+                console.error('Error:', err)
+            })
+        }
+
+        function showOrders(filter) {
+            fetch(`/api/orders/get/${filter}`, {
+                method: 'GET',
+                headers: {
+                    "Content-type": 'application/json'
+                },
+            })
+            .then(res => {
+                if (res.ok) {
+                    return res.json()
+                } else {
+                    throw new Error('Error fetching orders')
+                }
+            })
+            .then(data => {
+                updateOrdersUI(data)
+            })
+            .catch(err => {
+                console.error('Error:', err)
+            })
+        }
+
+        function updateOrdersUI(orders) {
+            const orderList = document.getElementById('orderList')
+            orderList.innerHTML = ''
+
+            orders.forEach(order => {
+                const row = document.createElement('tr')
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.name}</td>
+                    <td>${order.street}</td>
+                    <td>${order.zipcode}</td>
+                    <td>${order.fulfilled}</td>
+                `
+                orderList.appendChild(row)
+            })
+        }
+
+        function deleteSelectedStock() {
+            // Handle delete action
+        }
+
+        function addStock() {
+            // Handle adding order
+        }
+    </script>
+</body>
+
+</html>

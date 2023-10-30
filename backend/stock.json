@@ -1,74 +1,74 @@
-{"stock": [
+[
     {
       "title": "cat",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "fish",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "god",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "moth",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "mushroom",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "red",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "spiral",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "spirit",
       "kind": "SmallPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "spore",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "tears",
       "kind": "BigPrint",
       "description": "Really Good piece my girlfriend liks  a lot :3",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "tiger",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     },
     {
       "title": "yourgods",
       "kind": "BigPrint",
       "description": "TODO",
-      "stock": 420
+      "quantity": 420
     }
-  ]}
+  ]

@@ -1,26 +1,53 @@
+
 use serde::{Deserialize, Serialize};
 
-use crate::cart::Cart;
+#[cfg(feature = "backend")]
+use diesel::prelude::*;
 
-type Name = (String, String);
-// Assumes orders are US only
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
-pub struct Order {
-    pub name: Name,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct JsonOrder {
+    pub name: String,
     pub street: String,
-    pub zipcode: u32,
-    pub cart: Cart,
+    pub zipcode: i32,
     pub fulfilled: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
-pub struct OrderHistory {
-    pub orders: Vec<Order>,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "backend", derive(Queryable, Selectable, Identifiable), diesel(table_name = crate::schema::orders), diesel(check_for_backend(diesel::sqlite::Sqlite)))]
+pub struct Order {
+    #[cfg(feature = "backend")]
+    pub id: i32,
+    pub name: String,
+    pub street: String,
+    pub zipcode: i32,
+    pub fulfilled: bool,
+}
+
+#[cfg(feature = "backend")]
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::orders)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct NewOrder<'a> {
+    pub name: &'a str,
+    pub street: &'a str,
+    pub zipcode: i32,
+    pub fulfilled: bool,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy)]
+pub enum OrderFilter {
+    All, 
+    Fulfilled,
+    Unfulfilled
 }
 
 impl std::fmt::Display for Order {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let txt = serde_json::to_string_pretty(self).map_err(|_| std::fmt::Error)?;
-        write!(f, "{txt}")
+        write!(
+            f,
+            "{{ Order: \n\t name: {:?}, \n street: {}, \n zipcode: {}, \n, fulfilled: {} \n }}",
+            self.name, self.street, self.zipcode, self.fulfilled
+        )
     }
 }
+

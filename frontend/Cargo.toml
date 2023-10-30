@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.75"
 yew = { version = "0.21.0", features = ["csr"] }
-common = { version = "0.1.0", path = "../common"}
+common = { version = "^0.1.0", path = "../common", features = ["frontend"], default-features = false}
 gloo = "0.10.0"
 gloo-file = { version = "0.3.0", features = ["futures"] }
 reqwest = "0.11.22"

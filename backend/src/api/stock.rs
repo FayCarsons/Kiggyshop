@@ -1,83 +1,90 @@
 use common::{
-    item::{AdminItem, Item},
-    Stock,
+    item::{Item, NewItem},
+    schema::stock,
 };
 
-use actix_web::{
-    delete, get, post, put,
-    web::{Path, ReqData},
-    HttpResponse,
-};
-use std::{
-    fs::{File, OpenOptions},
-    io::{ErrorKind, Read, Write},
-};
+use actix_web::{delete, get, post, put, web, HttpResponse};
+use serde_json::to_string;
+use std::{fs::File, io::Read};
+
+use diesel::prelude::*;
+
+use crate::{error::{BackendError, ShopResult}, DbPool};
 
 #[get("/stock/get")]
-pub async fn get_stock() -> HttpResponse {
-    println!("\n BACKEND STOCK/GET \n");
+pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
+    let stock: Vec<Item> = web::block(move || {
+        let mut conn = pool.get().expect("couldn't get db connection");
+        stock::table
+            .select(Item::as_select())
+            .get_results(&mut conn)
+            .expect("CANNOT GET STOCK FROM DB")
+    })
+    .await
+    .map_err(|e| BackendError::FileReadError(e.to_string()))?;
+    let ser = to_string(&stock).unwrap();
 
-    let mut file = File::open("stock.json").expect("CANNOT ACCESS STOCK DATA");
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer)
-        .expect("CANNOT WRITE FILE TO BUFFER");
-
-    let data: Stock = serde_json::from_str(&buffer).expect("CANNOT DESERIALIZE");
-    let ser_stock = serde_json::to_string_pretty(&data).expect("CANNOT SERIALIZE");
-
-    HttpResponse::Ok().content_type("text/json").body(ser_stock)
+    Ok(HttpResponse::Ok().content_type("application/json").body(ser))
 }
 
-#[post("/stock/add")]
-pub async fn add_item(item: ReqData<AdminItem>) -> Result<HttpResponse, std::io::Error> {
-    let mut file = File::open("stock.json").expect("CANNOT ACCESS STOCK DATA");
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer)
-        .expect("CANNOT WRITE FILE TO BUFFER");
+#[put("/stock/put")]
+pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<Item>) -> ShopResult<HttpResponse> {
+    let item = item.into_inner();
 
-    let stock: Stock = serde_json::from_str(&buffer).expect("CANNOT DESERIALIZE STOCK");
-    let new_item = Item::from_admin(item.into_inner())
-        .map_err(|e| std::io::Error::new(ErrorKind::Other, e.to_string()))?;
-    let new_stock = stock
-        .stock
-        .into_iter()
-        .chain(std::iter::once(new_item))
-        .collect::<Stock>();
+    web::block(move || {
+        let item = NewItem {
+            title: &item.title,
+            kind: &item.kind,
+            description: &item.description,
+            quantity: item.quantity,
+        };
 
-    update_stock(new_stock)?;
+        let mut conn = pool.get().expect("CANNOT GET DB CONNECTION");
+        diesel::insert_into(stock::table)
+            .values(item)
+            .execute(&mut conn)
+            .and_then(|_| Ok(()))
+    }).await.unwrap().unwrap();
 
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/stock/delete/{name}")]
-pub async fn delete_item(name: Path<String>) -> Result<HttpResponse, std::io::Error> {
-    let name = name.into_inner();
+#[delete("/stock/delete/{item_id}")]
+pub async fn delete_stock(pool: web::Data<DbPool>, item_id: web::Path<i32>) -> ShopResult<HttpResponse> {
+    use common::schema::stock::*;
+    let item_id = item_id.into_inner();
 
-    let mut file = File::open("stock.json").expect("CANNOT ACCESS STOCK DATA");
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer)
-        .expect("CANNOT WRITE FILE TO BUFFER");
-
-    let stock: Stock = serde_json::from_str(&buffer).expect("CANNOT DESERIALIZE STOCK");
-    let new_stock = stock
-        .stock
-        .into_iter()
-        .filter(|item| item.title != name)
-        .collect::<Stock>();
-
-    update_stock(new_stock)?;
-
+    web::block(move || {
+        let mut conn = pool.get().unwrap();
+        diesel::delete(stock::table.filter(id.eq(item_id))).execute(&mut conn).unwrap()
+    }).await.unwrap();
+    
     Ok(HttpResponse::Ok().finish())
 }
 
-fn update_stock(stock: Stock) -> Result<(), std::io::Error> {
-    let new_ser = serde_json::to_string_pretty(&stock)?;
+/// Only needed if DB does not have stock.
+/// Requires env var `INIT_DB=TRUE` to run
+pub fn init_stock() -> Result<(), BackendError> {
+    let mut file = File::open("stock.json").unwrap();
+    let mut buffer = String::new();
+    file.read_to_string(&mut buffer).unwrap();
 
-    let mut new_data = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open("stock.json")?;
-    new_data.write(new_ser.as_bytes())?;
+    let de = serde_json::from_str::<Vec<Item>>(&buffer).unwrap();
+    let ins: Vec<NewItem> = de
+        .iter()
+        .map(|item| NewItem {
+            title: &item.title,
+            kind: &item.kind,
+            description: &item.description,
+            quantity: item.quantity,
+        })
+        .collect();
+
+    let mut conn = SqliteConnection::establish(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+    diesel::insert_into(stock::table)
+        .values(ins)
+        .execute(&mut conn)
+        .unwrap();
 
     Ok(())
 }

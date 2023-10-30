@@ -1,24 +1,27 @@
+use super::Order;
+
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
-pub struct CartItem {
-    item: String,
-    quantity: usize,
-}
+#[cfg(feature = "backend")]
+use diesel::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "backend", derive(Queryable, Selectable, Associations, Identifiable), diesel(belongs_to(Order)), diesel(table_name = crate::schema::carts))]
 pub struct Cart {
-    items: Vec<CartItem>,
+    #[cfg(feature = "backend")]
+    pub id: i32,
+    #[cfg(feature = "backend")]
+    pub order_id: i32,
+    pub item_name: String,
+    pub quantity: i32,
 }
 
-impl Cart {
-    pub fn new() -> Self {
-        Cart { ..Self::default() }
-    }
-}
-
-impl Default for Cart {
-    fn default() -> Self {
-        Cart { items: vec![] }
-    }
+#[cfg(feature = "backend")]
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::carts)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct NewCart<'a> {
+    pub order_id: i32,
+    pub item_name: &'a str,
+    pub quantity: i32,
 }

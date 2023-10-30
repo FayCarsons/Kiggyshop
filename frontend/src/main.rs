@@ -1,11 +1,9 @@
 pub mod components;
 pub mod error;
 pub mod hooks;
-use common::Stock;
 use components::{home::Home, suspense::Loading};
 use std::sync::OnceLock;
 use yew::prelude::*;
-pub static STOCK: OnceLock<Stock> = OnceLock::new();
 
 #[function_component(App)]
 fn app() -> Html {

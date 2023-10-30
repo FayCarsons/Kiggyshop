@@ -11,8 +11,12 @@ pub fn home() -> HtmlResult {
     let stock = use_stock()?;
 
     if stock.is_err() {
-        log!(format!("{:?}", stock));
-        panic!()
+        return Ok(html! {
+            <div>
+                <p>{"there's bean an error :/"}</p>
+                <p>{stock.err().unwrap().to_string()}</p>
+            </div>
+        })
     }
 
     let focus: yew::UseStateHandle<Option<Item>> = use_state(|| None);
@@ -38,7 +42,6 @@ pub fn home() -> HtmlResult {
     let items = if focus.clone().is_none() {
         stock
             .unwrap()
-            .stock
             .iter()
             .map(|item| {
                 html! {
