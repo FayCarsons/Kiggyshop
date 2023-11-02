@@ -2,7 +2,7 @@ use core::fmt;
 use std::env::VarError;
 
 use actix_web::{HttpResponse, ResponseError};
-use diesel::backend::Backend;
+
 use serde::{Deserialize, Serialize};
 
 pub type ShopResult<T> = Result<T, BackendError>;
@@ -17,6 +17,7 @@ pub enum BackendError {
     ResourceLocked(String),
     SerializationError(String),
     DeserializationError(String),
+    PaymentError(String),
     Unauthorized,
 }
 
@@ -42,11 +43,14 @@ impl From<BackendError> for String {
             BackendError::FileWriteError(s) => format!("Cannot write file {s}"),
             BackendError::ResourceLocked(s) => format!("Resource {s} currently locked"),
             BackendError::SerializationError(s) => format!("Cannot serialize struct {s}"),
-            BackendError::DeserializationError(s) => format!("Cannot deserialize file or http response {s}"),
+            BackendError::DeserializationError(s) => {
+                format!("Cannot deserialize file or http response {s}")
+            }
             BackendError::Unauthorized => {
                 "YOU are not authorized to access this content . . .".to_owned()
             }
             BackendError::EnvError(s) => format!("Environment error: {s}"),
+            BackendError::PaymentError(s) => format!("Payment error: {s}"),
         }
     }
 }
@@ -60,7 +64,8 @@ impl ResponseError for BackendError {
             Self::SerializationError(s)
             | Self::DeserializationError(s)
             | Self::FileWriteError(s)
-            | Self::EnvError(s) => HttpResponse::InternalServerError().body(s.clone()),
+            | Self::EnvError(s)
+            | Self::PaymentError(s) => HttpResponse::InternalServerError().body(s.clone()),
             Self::FileReadError(s) => HttpResponse::FailedDependency().body(s.clone()),
             Self::ResourceLocked(s) => HttpResponse::Locked().body(s.clone()),
             Self::Unauthorized => HttpResponse::Forbidden().body(""),

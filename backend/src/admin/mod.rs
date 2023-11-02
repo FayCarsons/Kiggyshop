@@ -1,17 +1,21 @@
 use std::{fs::File, io::Read};
 
-use actix_web::{post, web::{self, Redirect}, HttpRequest, HttpResponse, get, Responder};
+use actix_web::{
+    get, post,
+    web::{self, Redirect},
+    HttpResponse,
+};
 use serde::Deserialize;
 
 use crate::error::ShopResult;
 
 #[derive(Debug, Clone, Deserialize)]
 struct Password {
-    password: String
+    password: String,
 }
 
 fn is_valid_password(pass: &str) -> bool {
-    pass == &std::env::var("ADMIN_PASS").unwrap_or(String::new())
+    pass == std::env::var("ADMIN_PASS").unwrap_or_default()
 }
 
 #[get("/admin")]
@@ -22,8 +26,6 @@ pub async fn login() -> HttpResponse {
 
     HttpResponse::Ok().content_type("text/html").body(buffer)
 }
-
-
 
 #[post("/admin")]
 pub async fn try_login(web::Form(form): web::Form<Password>) -> ShopResult<Redirect> {

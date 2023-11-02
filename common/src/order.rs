@@ -1,14 +1,14 @@
-
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "backend")]
 use diesel::prelude::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct JsonOrder {
     pub name: String,
     pub street: String,
     pub zipcode: i32,
+    pub total: i32,
     pub fulfilled: bool,
 }
 
@@ -20,6 +20,7 @@ pub struct Order {
     pub name: String,
     pub street: String,
     pub zipcode: i32,
+    pub total: i32,
     pub fulfilled: bool,
 }
 
@@ -36,9 +37,9 @@ pub struct NewOrder<'a> {
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy)]
 pub enum OrderFilter {
-    All, 
+    All,
     Fulfilled,
-    Unfulfilled
+    Unfulfilled,
 }
 
 impl std::fmt::Display for Order {
@@ -50,4 +51,3 @@ impl std::fmt::Display for Order {
         )
     }
 }
-

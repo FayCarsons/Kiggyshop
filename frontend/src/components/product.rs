@@ -1,5 +1,12 @@
 use common::item::Item;
-use yew::{function_component, html, Callback, Html, Properties};
+use yew::{
+    function_component, html, use_context, use_reducer, Callback, Html, MouseEvent, Properties,
+};
+
+use crate::{
+    cart::{Cart, CartAction, AppAction},
+    utils::{kind_to_price_category, title_to_path}, Context,
+};
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct GalleryProps {
@@ -40,8 +47,8 @@ pub struct FocusProps {
     pub product: Item,
 }
 
-#[function_component(FocusProduct)]
-pub fn focus_product(props: &FocusProps) -> Html {
+#[function_component(ProductPage)]
+pub fn product_page(props: &FocusProps) -> Html {
     let Item {
         title,
         kind,
@@ -52,6 +59,11 @@ pub fn focus_product(props: &FocusProps) -> Html {
 
     let (price, category) = kind_to_price_category(&kind);
 
+    let ctx = use_context::<Context>().unwrap();
+    let onclick: Callback<MouseEvent> = {
+        let id = props.product.id;
+        Callback::from(move |_: MouseEvent| ctx.dispatch(AppAction::UpdateCart(CartAction::AddItem(id))))
+    };
     html! {
         <div class="product-details" >
             <div class="product-image">
@@ -61,23 +73,10 @@ pub fn focus_product(props: &FocusProps) -> Html {
                 <h2>{title}</h2>
                 <p>{category}</p>
                 <p>{description}</p>
-                <p>{price}</p>
+                <p>{format!("${price}")}</p>
                 <p>{quantity}</p>
-                <button class="add-to-cart-btn">{"Add to cart"}</button>
+                <button class="shop-btn" id="add-to-cart-btn" {onclick}>{"Add to cart"}</button>
             </div>
         </div>
     }
-}
-
-fn title_to_path(title: &str) -> String {
-    format!("/api/resources/images/{title}.png")
-}
-
-fn kind_to_price_category(kind: &str) -> (f32, String) {
-    let price = match kind {
-        "SmallPrint" => 7.,
-        "Button" => 3.,
-        _ => 20.,
-    };
-    (price, kind.to_owned())
 }

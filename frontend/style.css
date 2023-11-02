@@ -2,6 +2,7 @@
   --bg-color: #f9f9f9;
   --dark-text: #111;
   --light-text: #eee;
+  --btn-hover: #ccc; 
 }
 
 
@@ -98,18 +99,6 @@ footer {
   margin-bottom: 10px;
 }
 
-.contact-button {
-  display: inline-block;
-  background-color: var(--bg-color);
-  color: var(--dark-text);
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-family: 'Courier New', monospace; /* Use a monospace font for the typewriter vibe */
-}
-
 .product-details-container {
   max-width: 960px;
   width: 100%;
@@ -129,7 +118,7 @@ footer {
 .product-image {
   width: 300px;
   height: 300px;
-  overflow: hidden;
+  /*overflow: hidden;*/
 }
 
 .product-image img {
@@ -152,13 +141,77 @@ footer {
   margin-bottom: 10px;
 }
 
-.add-to-cart-btn {
+.shop-btn {
   background-color: var(--bg-color);
   color: var(--dark-text);
   border: none;
   padding: 10px 20px;
-  border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-family: 'Courier New', monospace;
+}
+
+.shop-btn:hover {
+  background-color: var(--btn-hover); /* Light grey color on hover */
+}
+
+#contact-button {
+  display: inline-block;
+  cursor: pointer;
+}
+
+#cart-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+/*cart page*/
+
+.cart-container {
+    max-width: 960px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.cart-items {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.cart-image img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.cart-details h3 {
+    font-size: 18px;
+    margin: 0;
+}
+
+#checkout-btn {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Courier New', monospace;
+}
+
+#checkout-btn:hover {
+    background-color: #218838;
 }

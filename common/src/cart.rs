@@ -1,16 +1,21 @@
-use super::Order;
-
+use super::{item::Item, Order};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "backend")]
 use diesel::prelude::*;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "backend", derive(Queryable, Selectable, Associations, Identifiable), diesel(belongs_to(Order)), diesel(table_name = crate::schema::carts))]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Cart {
-    #[cfg(feature = "backend")]
+    pub inner: hashbrown::HashMap<Item, u64>,
+}
+
+#[rustfmt::skip]
+#[cfg_attr(feature = "backend", 
+  derive(Queryable, Selectable, Associations, Identifiable), 
+  diesel(belongs_to(Order)), 
+  diesel(table_name = crate::schema::carts))]
+pub struct DbCart {
     pub id: i32,
-    #[cfg(feature = "backend")]
     pub order_id: i32,
     pub item_name: String,
     pub quantity: i32,

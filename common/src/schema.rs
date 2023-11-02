@@ -15,13 +15,14 @@ diesel::table! {
         name -> Text,
         street -> Text,
         zipcode -> Integer,
+        total -> Integer,
         fulfilled -> Bool,
     }
 }
 
 diesel::table! {
     stock (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         title -> Text,
         kind -> Text,
         description -> Text,
@@ -31,4 +32,8 @@ diesel::table! {
 
 diesel::joinable!(carts -> orders (order_id));
 
-diesel::allow_tables_to_appear_in_same_query!(carts, orders, stock,);
+diesel::allow_tables_to_appear_in_same_query!(
+    carts,
+    orders,
+    stock,
+);

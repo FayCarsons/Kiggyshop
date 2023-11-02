@@ -1,7 +1,14 @@
+#![feature(once_cell_try)]
+#![feature(async_closure)]
+
 mod admin;
 mod api;
-pub mod error;
-use admin::{dashboard, login, try_login, unauthorized, get_style};
+mod error;
+mod stripe;
+
+use std::sync::OnceLock;
+
+use admin::{dashboard, get_style, login, try_login, unauthorized};
 use api::{
     order::get_orders,
     stock::{get_stock, init_stock},
@@ -16,20 +23,22 @@ use diesel::{r2d2, SqliteConnection};
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 const BIND: (&str, u16) = ("localhost", 8081);
+static STRIPE_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
-    std::env::set_var("RUST_LOG", "debug");
-    std::env::set_var("RUST_BACKTRACE", "1");
-    std::env::set_var("DATABASE_URL", "../data.sqlite");
+    dotenv::dotenv().ok();
     env_logger::init();
 
-    if std::env::var("INIT_DB").unwrap() == "TRUE" {
+    STRIPE_SECRET_KEY
+        .get_or_try_init(|| std::env::var("STRIPE_SECRET_KEY").map_err(BackendError::from))?;
+
+    if std::env::var("INIT_DB").map_err(BackendError::from)? == "TRUE" {
         init_stock().unwrap();
     }
 
     let manager = r2d2::ConnectionManager::<SqliteConnection>::new(
-        std::env::var("DATABASE_URL").map_err(|e| BackendError::from(e))?,
+        std::env::var("DATABASE_URL").map_err(BackendError::from)?,
     );
     let pool = r2d2::Pool::builder()
         .build(manager)

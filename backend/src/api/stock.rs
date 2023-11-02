@@ -1,15 +1,18 @@
 use common::{
-    item::{Item, NewItem},
-    schema::stock,
+    item::{Item, NewItem, InputItem},
+    schema::stock, StockMap,
 };
 
-use actix_web::{delete, get, post, put, web, HttpResponse};
+use actix_web::{delete, get, put, web, HttpResponse};
 use serde_json::to_string;
 use std::{fs::File, io::Read};
 
 use diesel::prelude::*;
 
-use crate::{error::{BackendError, ShopResult}, DbPool};
+use crate::{
+    error::{BackendError, ShopResult},
+    DbPool,
+};
 
 #[get("/stock/get")]
 pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
@@ -22,9 +25,14 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
     })
     .await
     .map_err(|e| BackendError::FileReadError(e.to_string()))?;
-    let ser = to_string(&stock).unwrap();
 
-    Ok(HttpResponse::Ok().content_type("application/json").body(ser))
+    let hm: StockMap = stock.iter().map(|item| (item.id, item.clone())).collect::<StockMap>();
+
+    let ser = to_string(&hm).unwrap();
+
+    Ok(HttpResponse::Ok()
+        .content_type("application/json")
+        .body(ser))
 }
 
 #[put("/stock/put")]
@@ -43,22 +51,32 @@ pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<Item>) -> ShopRes
         diesel::insert_into(stock::table)
             .values(item)
             .execute(&mut conn)
-            .and_then(|_| Ok(()))
-    }).await.unwrap().unwrap();
+            .map(|_| ())
+    })
+    .await
+    .unwrap()
+    .unwrap();
 
     Ok(HttpResponse::Ok().finish())
 }
 
 #[delete("/stock/delete/{item_id}")]
-pub async fn delete_stock(pool: web::Data<DbPool>, item_id: web::Path<i32>) -> ShopResult<HttpResponse> {
+pub async fn delete_stock(
+    pool: web::Data<DbPool>,
+    item_id: web::Path<i32>,
+) -> ShopResult<HttpResponse> {
     use common::schema::stock::*;
     let item_id = item_id.into_inner();
 
     web::block(move || {
         let mut conn = pool.get().unwrap();
-        diesel::delete(stock::table.filter(id.eq(item_id))).execute(&mut conn).unwrap()
-    }).await.unwrap();
-    
+        diesel::delete(stock::table.filter(id.eq(item_id)))
+            .execute(&mut conn)
+            .unwrap()
+    })
+    .await
+    .unwrap();
+
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -69,7 +87,7 @@ pub fn init_stock() -> Result<(), BackendError> {
     let mut buffer = String::new();
     file.read_to_string(&mut buffer).unwrap();
 
-    let de = serde_json::from_str::<Vec<Item>>(&buffer).unwrap();
+    let de = serde_json::from_str::<Vec<InputItem>>(&buffer).unwrap();
     let ins: Vec<NewItem> = de
         .iter()
         .map(|item| NewItem {

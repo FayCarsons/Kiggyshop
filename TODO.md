@@ -8,3 +8,6 @@
 - get real data in DBs
 - Error handling: replace calls to unwrap with actual error handling 
 - Set up some form of exponential backoff on the frontend
+
+- Refactor Carts + Items, instead of HashMap of Item -> Quantity should be ItemId(i32)  -> quantity(u64)
+- Fix cookies

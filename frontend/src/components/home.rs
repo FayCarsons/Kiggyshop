@@ -1,9 +1,13 @@
-use crate::{components::product::FocusProduct, hooks::use_stock};
+use crate::{cart::AppAction, components::product::ProductPage, hooks::use_stock, Context, Route};
 
 use super::product::GalleryProduct;
 use common::item::Item;
 use gloo::console::log;
-use yew::{function_component, html, use_state, Callback, Html, HtmlResult};
+use yew::{
+    function_component, html, html::RenderError, suspense::Suspension, use_context, use_state,
+    Callback, Html, HtmlResult,
+};
+use yew_router::prelude::Link;
 
 #[function_component(Home)]
 pub fn home() -> HtmlResult {
@@ -16,9 +20,16 @@ pub fn home() -> HtmlResult {
                 <p>{"there's bean an error :/"}</p>
                 <p>{stock.err().unwrap().to_string()}</p>
             </div>
-        })
+        });
     }
 
+    let stock = stock.unwrap().clone();
+
+    let ctx = use_context::<Context>().unwrap();
+    ctx.dispatch(AppAction::LoadStock(stock));
+
+    let cart_count = format!("cart: {}", ctx.cart.count());
+    log!(&cart_count);
     let focus: yew::UseStateHandle<Option<Item>> = use_state(|| None);
 
     let onclick = || {
@@ -39,11 +50,14 @@ pub fn home() -> HtmlResult {
         })
     };
 
-    let items = if focus.clone().is_none() {
-        stock
+    let items = if ctx.stock.is_none() {
+        return Err(RenderError::Suspended(Suspension::new().0));
+    } else if focus.clone().is_none() {
+        ctx.stock
+            .as_ref()
             .unwrap()
             .iter()
-            .map(|item| {
+            .map(|(_, item)| {
                 html! {
                         <GalleryProduct product={item.clone()} onclick={onclick()}/>
                 }
@@ -52,7 +66,7 @@ pub fn home() -> HtmlResult {
     } else {
         let product = focus.as_ref().unwrap();
         html! {
-                <FocusProduct product={product.clone()}/>
+                <ProductPage product={product.clone()}/>
         }
     };
 
@@ -60,13 +74,16 @@ pub fn home() -> HtmlResult {
         <div>
             <header onclick={home}>
                 <h1>{"Kristen Rankin"} </h1>
+                <div class="shop-btn" id="cart-btn">
+                    <Link<Route> to={Route::Cart}>{cart_count}</Link<Route>>
+                </div>
             </header>
             <hr class="separator" />
             <div class={if focus.is_none() {"products"} else {"product-details-container"}}>
                 {items}
             </div>
             <footer>
-                <button class="contact-button">{"Contact me"}</button>
+                <button class="shop-btn" id="contact-button">{"Contact me"}</button>
             </footer>
         </div>
     })
