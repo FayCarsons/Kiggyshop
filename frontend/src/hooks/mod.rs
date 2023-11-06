@@ -1,5 +1,5 @@
-use crate::error::FrontendError;
-use common::{from_str, item::Item, StockMap};
+use crate::error::{FrontendError, FEResult};
+use common::{from_str, StockMap, log_debug};
 use gloo::net::http::Request;
 use yew::{
     hook,
@@ -7,18 +7,13 @@ use yew::{
 };
 
 #[hook]
-pub fn use_stock() -> SuspensionResult<Result<StockMap, FrontendError>> {
+pub fn use_stock() -> SuspensionResult<FEResult<StockMap> > {
     let res: yew::suspense::UseFutureHandle<Result<StockMap, _>> = use_future(|| async {
-        gloo::console::log!("Requesting stock!");
+        log_debug!("Requesting stock!");
         let req = Request::get("/api/stock/get").send().await?.text().await?;
-        let stock: Result<StockMap, FrontendError> =
-            from_str(&req).map_err(|e| FrontendError::DeserializationError(e.to_string()));
-        if stock.is_err() {
-            // !! T O D O !!
-            // Do exponential backoff or smth
-            gloo::console::log!("Stock is error!!");
-        }
-        Ok::<StockMap, FrontendError>(stock.unwrap())
+        let stock: StockMap = from_str(&req)?;
+
+        Ok::<StockMap, FrontendError>(stock)
     })?;
 
     match &(*res) {

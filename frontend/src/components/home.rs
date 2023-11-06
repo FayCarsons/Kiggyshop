@@ -1,17 +1,16 @@
 use crate::{cart::AppAction, components::product::ProductPage, hooks::use_stock, Context, Route};
 
 use super::product::GalleryProduct;
-use common::item::Item;
-use gloo::console::log;
+use common::{item::Item, log_debug};
 use yew::{
     function_component, html, html::RenderError, suspense::Suspension, use_context, use_state,
-    Callback, Html, HtmlResult,
+    Callback, Html, HtmlResult, UseStateHandle,
 };
 use yew_router::prelude::Link;
 
 #[function_component(Home)]
 pub fn home() -> HtmlResult {
-    log!("I am in the Home Component");
+    log_debug!("I am in the Home Component");
     let stock = use_stock()?;
 
     if stock.is_err() {
@@ -26,36 +25,34 @@ pub fn home() -> HtmlResult {
     let stock = stock.unwrap().clone();
 
     let ctx = use_context::<Context>().unwrap();
-    ctx.dispatch(AppAction::LoadStock(stock));
+    {
+        let stock = stock.clone();
+        ctx.dispatch(AppAction::LoadStock(stock))
+    };
 
     let cart_count = format!("cart: {}", ctx.cart.count());
-    log!(&cart_count);
-    let focus: yew::UseStateHandle<Option<Item>> = use_state(|| None);
+    let focus: UseStateHandle<Option<Item>> = use_state(|| None);
 
     let onclick = || {
         let focus = focus.clone();
-        Callback::from(move |item| {
+        move |item| {
             if focus.is_none() {
                 focus.set(Some(item))
             }
-        })
+        }
     };
 
     let home = {
         let focus = focus.clone();
-        Callback::from(move |_| {
+        move |_| {
             if focus.is_some() {
                 focus.set(None)
             }
-        })
+        }
     };
 
-    let items = if ctx.stock.is_none() {
-        return Err(RenderError::Suspended(Suspension::new().0));
-    } else if focus.clone().is_none() {
-        ctx.stock
-            .as_ref()
-            .unwrap()
+    let items = if focus.clone().is_none() {
+        stock
             .iter()
             .map(|(_, item)| {
                 html! {

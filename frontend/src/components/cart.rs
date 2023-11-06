@@ -3,20 +3,26 @@ use web_sys::MouseEvent;
 use yew::{function_component, html, use_context, Html, Properties};
 
 use crate::{
-    cart::{Cart, AppAction, CartAction}, 
-    utils::{kind_to_price_category, title_to_path}, Context, components::error::Error,
+    cart::{AppAction, CartAction},
+    components::error::Error,
+    utils::title_to_path,
+    Context,
 };
 
 #[function_component(CartPage)]
 pub fn cart() -> Html {
     let ctx = use_context::<Context>().unwrap();
 
-    let cart_items = ctx.cart
+    let cart_items = ctx
+        .cart
         .items
         .iter()
         .map(|(item_id, qty)| {
             let item = ctx.get_item(*item_id);
-            let item = match item { Some(item) => item, None => return html!{<Error/>}};
+            let item = match item {
+                Some(item) => item,
+                None => return html! {<Error/>},
+            };
             html! {<CartItem item={item.clone()}qty={*qty}/>}
         })
         .collect::<Html>();
@@ -45,11 +51,8 @@ pub fn cart_item(props: &CartItemProps) -> Html {
 
     let ctx = use_context::<Context>().unwrap();
 
-    let onclick = {
-        move |_: MouseEvent| {
-            ctx.dispatch(AppAction::UpdateCart(CartAction::RemoveItem(id)))
-        }
-    };
+    let onclick =
+        { move |_: MouseEvent| ctx.dispatch(AppAction::UpdateCart(CartAction::RemoveItem(id))) };
 
     html! {
         <div class="cart-item">
@@ -62,7 +65,7 @@ pub fn cart_item(props: &CartItemProps) -> Html {
                 <p>{format!("qty: {qty}")}</p>
                 <button class="remove-item" {onclick}>{"x"}</button>
             </div>
-            
+
         </div>
     }
 }

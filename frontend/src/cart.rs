@@ -1,27 +1,25 @@
-use crate::error::FrontendError;
-use common::{from_str, to_string, CartMap, StockMap, item::Item};
+use crate::{error::{FEResult, FrontendError}, utils::get_document};
+use common::{from_str, item::Item, to_string, CartMap, StockMap, log_debug};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
-use yew::{Reducible, Properties};
+use yew::{Properties, Reducible};
 
 use web_sys::HtmlDocument;
 
 #[derive(Properties, PartialEq, Clone, Debug)]
 pub struct AppState {
     pub cart: Cart,
-    pub stock: Option<StockMap>
+    pub stock: Option<StockMap>,
 }
 
 pub enum AppAction {
     LoadStock(StockMap),
-    UpdateCart(CartAction)
+    UpdateCart(CartAction),
 }
 
 impl AppState {
-    pub fn update_cart(&self, action: CartAction) -> Self {
+    pub fn update_cart(&self, action: CartAction) -> FEResult<Self> {
         let mut cpy = self.cart.items.clone();
-
-        log!(format!("{:?}", self));
 
         match action {
             CartAction::AddItem(item) => {
@@ -39,8 +37,11 @@ impl AppState {
             }
         }
         let new_cart = Cart { items: cpy };
-        new_cart.set_cookie().unwrap();
-        AppState {stock: self.stock.clone(), cart: new_cart}
+        new_cart.set_cookie()?;
+        Ok(AppState {
+            stock: self.stock.clone(),
+            cart: new_cart,
+        })
     }
 
     pub fn get_item(&self, id: i32) -> Option<&Item> {
@@ -53,8 +54,14 @@ impl Reducible for AppState {
 
     fn reduce(self: std::rc::Rc<Self>, action: Self::Action) -> std::rc::Rc<Self> {
         match action {
-            AppAction::LoadStock(stock) => {AppState {cart: self.cart.clone(), stock: Some(stock)}}.into(),
-            AppAction::UpdateCart(cart_action) => self.update_cart(cart_action).into()
+            AppAction::LoadStock(stock) => {
+                AppState {
+                    cart: self.cart.clone(),
+                    stock: Some(stock),
+                }
+            }
+            .into(),
+            AppAction::UpdateCart(cart_action) => self.update_cart(cart_action).unwrap().into(),
         }
     }
 }
@@ -84,31 +91,72 @@ impl Cart {
     }
 
     pub fn set_cookie(&self) -> Result<(), FrontendError> {
-        use web_sys::wasm_bindgen::JsCast;
-
-        let ser = to_string(self).map_err(|e| FrontendError::SerializationError(e.to_string()))?;
+        let ser = to_string(self)?;
         let max_age = 60 * 60 * 12 * 31;
         let cookie = format!("cart={}, path=/, max-age={}", ser, max_age);
 
-        let document = web_sys::window().unwrap().unchecked_into::<HtmlDocument>();
+        let document = get_document()?;
 
-        document.set_cookie(&cookie).unwrap();
-        log!(document);
+        document.set_cookie(&cookie)?;
 
         Ok(())
     }
 
     pub fn from_cookie() -> Option<Self> {
-        use web_sys::wasm_bindgen::JsCast;
-        let document = web_sys::window().unwrap().unchecked_into::<HtmlDocument>();
+        let document = get_document().ok();
+        let document = if let Some(document) = document {
+            document 
+        } else {
+            log_debug!("Document is None");
+            return None
+        };
 
-        match document.cookie() {
-            Ok(s) => {
-                log!("Got cookie: {}", &s);
-                let de = from_str::<Cart>(&s).unwrap();
-                Some(de)
+        
+
+        let cookie = document.cookie();
+        match cookie {
+            Ok(ref s) => {
+                log_debug!("Cookie: {:?}", document.cookie());
+                let s = substring(s, "cart=", "},");
+                if let Some(s) = s {
+                    log_debug!("Substring: {}", s);
+                    let deser = from_str::<Cart>(s);
+                        if let Ok(cart) = deser {
+                            Some(Cart::from(cart))
+                        } else {
+                            log_debug!("{:?}", deser );
+                            None
+                        }
+                } else {
+                    log_debug!("Cookie is None");
+                    None
+                }
             }
-            Err(_) => None,
+            _ => None,
         }
+    }
+}
+
+impl From<CartMap> for Cart {
+    fn from(value: CartMap) -> Self {
+        Cart {items: value}
+    }
+}
+
+pub fn substring<'a>(source: &'a str, start: &'a str, end: &'a str) -> Option<&'a str> {
+    let start_pos = source.find(start);
+
+    if let Some(start_pos) = start_pos {
+        let start_len = start.as_bytes().len();
+        let source = &source[start_pos+start_len..];
+        let end_pos = source.find(end);
+        
+        if let Some(end_pos) = end_pos {
+            Some(&source[..end_pos+1])
+        } else {
+            None
+        }
+    } else {
+        None
     }
 }

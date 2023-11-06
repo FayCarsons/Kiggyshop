@@ -7,3 +7,6 @@ members = [
 ]
 default-members = ["backend"]
 resolver = "2"
+
+[rust]
+debug = true

@@ -33,7 +33,7 @@ fn app() -> Html {
                 items: HashMap::new(),
             }
         };
-        AppState {cart: cart, stock: None}
+        AppState {cart, stock: None}
     });
 
     let fallback = html! {<Loading />};
