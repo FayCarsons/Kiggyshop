@@ -9,7 +9,7 @@ pub struct InputItem {
     pub title: String,
     pub kind: String,
     pub description: String,
-    pub quantity: i32
+    pub quantity: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]

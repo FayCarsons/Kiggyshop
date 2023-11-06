@@ -1,9 +1,10 @@
-pub mod cart;
+pub mod context;
 pub mod components;
 pub mod error;
 pub mod hooks;
 pub mod utils;
-use cart::{Cart, AppState};
+
+use context::{Cart, AppState};
 
 use common::HashMap;
 use components::{cart::CartPage, home::Home, suspense::Loading};

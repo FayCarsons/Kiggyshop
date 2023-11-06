@@ -1,4 +1,4 @@
-use crate::{cart::AppAction, components::product::ProductPage, hooks::use_stock, Context, Route};
+use crate::{context::AppAction, components::product::ProductPage, hooks::use_stock, Context, Route};
 
 use super::product::GalleryProduct;
 use common::{item::Item, log_debug};
@@ -71,9 +71,7 @@ pub fn home() -> HtmlResult {
         <div>
             <header onclick={home}>
                 <h1>{"Kristen Rankin"} </h1>
-                <div class="shop-btn" id="cart-btn">
-                    <Link<Route> to={Route::Cart}>{cart_count}</Link<Route>>
-                </div>
+                <Link<Route> classes="shop-btn cart-btn" to={Route::Cart}>{cart_count}</Link<Route>>
             </header>
             <hr class="separator" />
             <div class={if focus.is_none() {"products"} else {"product-details-container"}}>

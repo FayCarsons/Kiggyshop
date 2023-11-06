@@ -20,8 +20,6 @@ pub struct FrontendError {
     pub inner: AttrValue
 }
 
-
-
 impl From<gloo::net::Error> for FrontendError {
     fn from(value: gloo::net::Error) -> Self {
         FrontendError {

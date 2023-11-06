@@ -1,6 +1,7 @@
 use common::{
-    item::{Item, NewItem, InputItem},
-    schema::stock, StockMap,
+    item::{InputItem, Item, NewItem},
+    schema::stock,
+    StockMap,
 };
 
 use actix_web::{delete, get, put, web, HttpResponse};
@@ -26,7 +27,10 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
     .await
     .map_err(|e| BackendError::FileReadError(e.to_string()))?;
 
-    let hm: StockMap = stock.iter().map(|item| (item.id, item.clone())).collect::<StockMap>();
+    let hm: StockMap = stock
+        .iter()
+        .map(|item| (item.id, item.clone()))
+        .collect::<StockMap>();
 
     let ser = to_string(&hm).unwrap();
 

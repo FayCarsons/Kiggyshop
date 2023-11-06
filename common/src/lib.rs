@@ -8,9 +8,11 @@ pub mod utils;
 use item::Item;
 use order::Order;
 
-pub use serde::{Deserialize, Serialize};
-pub use serde_json::{from_slice, from_str, to_string, to_string_pretty, error::Error as SerdeError};
 pub use hashbrown::HashMap;
+pub use serde::{Deserialize, Serialize};
+pub use serde_json::{
+    error::Error as SerdeError, from_slice, from_str, to_string, to_string_pretty,
+};
 
 pub type StockMap = HashMap<i32, Item>;
 pub type CartMap = HashMap<i32, u32>;

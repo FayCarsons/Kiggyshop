@@ -155,12 +155,12 @@ footer {
   background-color: var(--btn-hover); /* Light grey color on hover */
 }
 
-#contact-button {
+.contact-button {
   display: inline-block;
   cursor: pointer;
 }
 
-#cart-btn {
+.cart-btn {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -201,7 +201,7 @@ footer {
     margin: 0;
 }
 
-#checkout-btn {
+.checkout-btn {
     background-color: #28a745;
     color: #fff;
     border: none;
@@ -212,6 +212,6 @@ footer {
     font-family: 'Courier New', monospace;
 }
 
-#checkout-btn:hover {
+.checkout-btn:hover {
     background-color: #218838;
 }

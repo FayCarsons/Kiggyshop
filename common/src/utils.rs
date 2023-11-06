@@ -2,7 +2,7 @@
 macro_rules! log_debug {
     ($($e:expr), *) => {
         {
-            
+
             #[cfg(debug)]
             #[cfg(target = "wasm32-unknown-unknown")]
             {

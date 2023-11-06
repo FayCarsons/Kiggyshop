@@ -4,7 +4,7 @@ use yew::{
 };
 
 use crate::{
-    cart::{Cart, CartAction, AppAction},
+    context::{Cart, CartAction, AppAction},
     utils::{kind_to_price_category, title_to_path}, Context,
 };
 

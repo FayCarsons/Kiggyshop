@@ -3,7 +3,7 @@ use web_sys::MouseEvent;
 use yew::{function_component, html, use_context, Html, Properties};
 
 use crate::{
-    cart::{AppAction, CartAction},
+    context::{AppAction, CartAction},
     components::error::Error,
     utils::title_to_path,
     Context,
