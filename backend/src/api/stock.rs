@@ -6,13 +6,13 @@ use common::{
 
 use actix_web::{delete, get, put, web, HttpResponse};
 use serde_json::to_string;
-use std::{fs::File, io::Read};
+use std::fs;
 
 use diesel::prelude::*;
 
 use crate::{
     error::{BackendError, ShopResult},
-    DbPool,
+    DbPool, ENV,
 };
 
 #[get("/stock/get")]
@@ -32,7 +32,7 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
         .map(|item| (item.id, item.clone()))
         .collect::<StockMap>();
 
-    let ser = to_string(&hm).unwrap();
+    let ser = to_string(&hm)?;
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -57,9 +57,7 @@ pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<Item>) -> ShopRes
             .execute(&mut conn)
             .map(|_| ())
     })
-    .await
-    .unwrap()
-    .unwrap();
+    .await??;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -72,14 +70,13 @@ pub async fn delete_stock(
     use common::schema::stock::*;
     let item_id = item_id.into_inner();
 
-    web::block(move || {
-        let mut conn = pool.get().unwrap();
+    web::block(move || -> ShopResult<()> {
+        let mut conn = pool.get()?;
         diesel::delete(stock::table.filter(id.eq(item_id)))
-            .execute(&mut conn)
-            .unwrap()
+            .execute(&mut conn)?;
+        Ok(())
     })
-    .await
-    .unwrap();
+    .await??;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -87,11 +84,9 @@ pub async fn delete_stock(
 /// Only needed if DB does not have stock.
 /// Requires env var `INIT_DB=TRUE` to run
 pub fn init_stock() -> Result<(), BackendError> {
-    let mut file = File::open("stock.json").unwrap();
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer).unwrap();
+    let buffer = fs::read_to_string("stock.json")?;
 
-    let de = serde_json::from_str::<Vec<InputItem>>(&buffer).unwrap();
+    let de = serde_json::from_str::<Vec<InputItem>>(&buffer)?;
     let ins: Vec<NewItem> = de
         .iter()
         .map(|item| NewItem {
@@ -102,11 +97,10 @@ pub fn init_stock() -> Result<(), BackendError> {
         })
         .collect();
 
-    let mut conn = SqliteConnection::establish(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+    let mut conn = SqliteConnection::establish(&ENV.get().cloned().unwrap_or_default().database_url).map_err(|e| BackendError::DbError(e.to_string()))?;
     diesel::insert_into(stock::table)
         .values(ins)
-        .execute(&mut conn)
-        .unwrap();
+        .execute(&mut conn)?;
 
     Ok(())
 }

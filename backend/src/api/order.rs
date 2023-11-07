@@ -26,7 +26,7 @@ pub async fn new_order(
     // STRIPE IMPLEMENTATION GOES HERE
     // FOLLOWED BY EMAILS VA SMTP TO BOTH CUSTOMER && Kristen
 
-    web::block(move || {
+    web::block(move || -> ShopResult<()> {
         let order = order.into_inner().clone();
         let order = NewOrder {
             name: &order.name,
@@ -34,12 +34,13 @@ pub async fn new_order(
             zipcode: order.zipcode,
             fulfilled: order.fulfilled,
         };
-        let mut conn = pool.get().unwrap();
+
+        let mut conn = pool.get()?;
+        
         let inserted_id = diesel::insert_into(orders::table)
             .values(&order)
             .returning(orders::dsl::id)
-            .get_result::<i32>(&mut conn)
-            .unwrap();
+            .get_result::<i32>(&mut conn)?;
         let new_carts = [
             NewCart {
                 order_id: inserted_id,
@@ -54,11 +55,10 @@ pub async fn new_order(
         ];
         diesel::insert_into(carts::table)
             .values(&new_carts)
-            .execute(&mut conn)
-            .unwrap();
+            .execute(&mut conn)?;
+        Ok(())
     })
-    .await
-    .unwrap();
+    .await??;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -70,30 +70,27 @@ pub async fn get_orders(
 ) -> ShopResult<HttpResponse> {
     let filter = filter.into_inner();
 
-    let orders: Vec<Order> = web::block(move || {
-        let mut conn = pool.get().unwrap();
+    let orders= web::block(move || -> ShopResult<Vec<Order>> {
+        let mut conn = pool.get()?;
 
-        match filter {
+        let res = match filter {
             OrderFilter::All => orders::table
                 .select(Order::as_select())
-                .get_results(&mut conn)
-                .unwrap(),
+                .get_results(&mut conn)?,
             OrderFilter::Fulfilled => orders::table
                 .select(Order::as_select())
                 .filter(fulfilled.eq(true))
-                .get_results(&mut conn)
-                .unwrap(),
+                .get_results(&mut conn)?,
             OrderFilter::Unfulfilled => orders::table
                 .select(Order::as_select())
                 .filter(fulfilled.eq(false))
-                .get_results(&mut conn)
-                .unwrap(),
-        }
+                .get_results(&mut conn)?,
+        };
+        Ok(res)
     })
-    .await
-    .unwrap();
+    .await??;
 
-    let json = serde_json::to_string(&orders).unwrap();
+    let json = serde_json::to_string(&orders)?;
     Ok(HttpResponse::Ok().content_type("text/json").body(json))
 }
 

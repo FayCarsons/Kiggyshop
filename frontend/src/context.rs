@@ -74,8 +74,8 @@ pub struct Cart {
 impl PartialEq for Cart {
     fn eq(&self, other: &Self) -> bool {
         self.items.keys().collect::<Vec<&i32>>() == other.items.keys().collect::<Vec<&i32>>()
-            && self.items.values().copied().collect::<Vec<u32>>()
-                == other.items.values().copied().collect::<Vec<u32>>()
+            && self.items.values().collect::<Vec<&u32>>()
+                == other.items.values().collect::<Vec<&u32>>()
     }
 }
 
@@ -92,7 +92,7 @@ impl Cart {
 
     pub fn set_cookie(&self) -> Result<(), FrontendError> {
         let ser = to_string(self)?;
-        let max_age = 60 * 60 * 12 * 31;
+        let max_age = 60 * 60 * 12 * 30 * 365;
         let cookie = format!("cart={}, path=/, max-age={}", ser, max_age);
 
         let document = get_document()?;
