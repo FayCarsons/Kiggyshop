@@ -4,13 +4,13 @@ macro_rules! log_debug {
         {
 
             #[cfg(debug)]
-            #[cfg(target = "wasm32-unknown-unknown")]
+            #[cfg(target_arch = "wasm32")]
             {
                 gloo::console::log!($($e), +)
             }
 
             #[cfg(debug)]
-            #[cfg(not(target = "wasm32-unknown-unknown"))]
+            #[cfg(not(target_arch = "wasm32"))]
             {
                 println!($($e), +);
             }

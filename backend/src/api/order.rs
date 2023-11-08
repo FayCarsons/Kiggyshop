@@ -36,7 +36,7 @@ pub async fn new_order(
         };
 
         let mut conn = pool.get()?;
-        
+
         let inserted_id = diesel::insert_into(orders::table)
             .values(&order)
             .returning(orders::dsl::id)
@@ -70,7 +70,7 @@ pub async fn get_orders(
 ) -> ShopResult<HttpResponse> {
     let filter = filter.into_inner();
 
-    let orders= web::block(move || -> ShopResult<Vec<Order>> {
+    let orders = web::block(move || -> ShopResult<Vec<Order>> {
         let mut conn = pool.get()?;
 
         let res = match filter {

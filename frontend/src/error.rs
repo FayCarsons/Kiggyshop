@@ -11,33 +11,39 @@ pub enum ErrorType {
     RequestError,
     DeserializationError,
     SerializationError,
-    JsError
+    JsError,
 }
 
 #[derive(Debug, Clone)]
 pub struct FrontendError {
     pub _type: ErrorType,
-    pub inner: AttrValue
+    pub inner: AttrValue,
 }
 
 impl From<gloo::net::Error> for FrontendError {
     fn from(value: gloo::net::Error) -> Self {
         FrontendError {
             _type: ErrorType::RequestError,
-            inner: value.to_string().into() 
+            inner: value.to_string().into(),
         }
     }
 }
 
 impl From<SerdeError> for FrontendError {
     fn from(value: SerdeError) -> Self {
-        FrontendError { _type: ErrorType::DeserializationError, inner: value.to_string().into() }
+        FrontendError {
+            _type: ErrorType::DeserializationError,
+            inner: value.to_string().into(),
+        }
     }
 }
 
 impl From<JsValue> for FrontendError {
     fn from(value: JsValue) -> Self {
-        FrontendError { _type: ErrorType::JsError, inner: format!("{:?}", value).into() }
+        FrontendError {
+            _type: ErrorType::JsError,
+            inner: format!("{:?}", value).into(),
+        }
     }
 }
 
@@ -47,8 +53,9 @@ impl From<ErrorType> for String {
             ErrorType::DeserializationError => "Deserialization Errror: ",
             ErrorType::JsError => "JS Error: ",
             ErrorType::RequestError => "Request Error: ",
-            ErrorType::SerializationError => "Serialization Error: "
-        }.to_owned()
+            ErrorType::SerializationError => "Serialization Error: ",
+        }
+        .to_owned()
     }
 }
 

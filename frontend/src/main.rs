@@ -1,13 +1,14 @@
-pub mod context;
 pub mod components;
+pub mod context;
 pub mod error;
 pub mod hooks;
 pub mod utils;
 
-use context::{Cart, AppState};
+use context::{AppState, Cart};
 
 use common::HashMap;
-use components::{cart::CartPage, home::Home, suspense::Loading};
+use components::{cart::CartPage, gallery::Gallery, suspense::Loading, product::ProductPage, header::Header};
+use utils::make_colors;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -17,6 +18,8 @@ pub type Context = UseReducerHandle<AppState>;
 pub enum Route {
     #[at("/")]
     Gallery,
+    #[at("/product/:id")]
+    Product{id: i32},
     #[at("/cart")]
     Cart,
     #[not_found]
@@ -34,7 +37,7 @@ fn app() -> Html {
                 items: HashMap::new(),
             }
         };
-        AppState {cart, stock: None}
+        AppState { cart, stock: None }
     });
 
     let fallback = html! {<Loading />};
@@ -61,7 +64,13 @@ fn main() {
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Cart => html! {<CartPage />},
-        Route::Gallery => html! {<Home/>},
+        Route::Gallery => html! {<Gallery/>},
+        Route::Product{id} => html!{
+            <div>
+                <Header count={Cart::from_cookie().unwrap().count()}/>
+                <ProductPage id={id}/>
+            </div>
+        },
         Route::NotFound => html! {<h1>{"four owo four: not fownd :/"}</h1>},
     }
 }

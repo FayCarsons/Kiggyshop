@@ -3,8 +3,8 @@ use web_sys::MouseEvent;
 use yew::{function_component, html, use_context, Html, Properties};
 
 use crate::{
-    context::{AppAction, CartAction},
     components::error::Error,
+    context::{AppAction, CartAction},
     utils::title_to_path,
     Context,
 };
@@ -28,12 +28,14 @@ pub fn cart() -> Html {
         .collect::<Html>();
 
     html! {
-        <div class="cart-container">
-            <div class="cart-items">
-                {cart_items}
+        <section class="bg-gray-100 py-8">
+            <div class="container mx-auto">
+                <article class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {cart_items}
+                </article>
+                <button class="shop-btn" id="checkout-btn">{"checkout"}</button>
             </div>
-            <button class="shop-btn" id="checkout-btn">{"checkout"}</button>
-        </div>
+        </section>
     }
 }
 
@@ -55,17 +57,14 @@ pub fn cart_item(props: &CartItemProps) -> Html {
         { move |_: MouseEvent| ctx.dispatch(AppAction::UpdateCart(CartAction::RemoveItem(id))) };
 
     html! {
-        <div class="cart-item">
-            <div class="cart-image">
-                <img src={title_to_path(&item.title)} />
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-4 shadow-md">
+            <img class="w-20 h-20 object-cover rounded" src={title_to_path(&item.title)} />
+            <div>
+                <h2 class="text-lg font-semibold">{item.title.clone()}</h2>
+                <p class="text-gray-500">{format!("${}", item.price())}</p>
+                <p class="text-gray-500">{format!("qty: {qty}")}</p>
+                <button class="text-red-500 hover:text-red-700 focus:outline-none" {onclick}>{"x"}</button>
             </div>
-            <div class="cart-details">
-                <h3>{item.title.clone()}</h3>
-                <p>{format!("${}", item.price())}</p>
-                <p>{format!("qty: {qty}")}</p>
-                <button class="remove-item" {onclick}>{"x"}</button>
-            </div>
-
         </div>
     }
 }

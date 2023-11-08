@@ -1,4 +1,4 @@
-use std::{fs::{File, self}, io::Read};
+use std::fs::{self};
 
 use actix_web::{
     get, post,

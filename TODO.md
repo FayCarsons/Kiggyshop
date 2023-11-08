@@ -7,7 +7,7 @@
   
 - Emails to both cutsomer && kristen whenever an order is placed
 - 
-- make pretty - tailwind?
+- make pretty - tailwind? yes setup tailwind
 - 
 - finish admin page for viewing orders/editing products
 - get real data in DBs - up to kristen

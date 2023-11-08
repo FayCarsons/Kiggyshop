@@ -6,8 +6,11 @@ use actix_web::{
 };
 use common::cart::Cart;
 use stripe::{
-    Client, CreatePaymentLink, CreatePaymentLinkLineItems, CreatePrice, CreateProduct, Currency,
-    PaymentLink, Price, Product, CreatePaymentLinkAfterCompletionRedirect, CreatePaymentLinkAfterCompletion, CreatePaymentLinkShippingAddressCollection, CreatePaymentLinkShippingAddressCollectionAllowedCountries,
+    Client, CreatePaymentLink, CreatePaymentLinkAfterCompletion,
+    CreatePaymentLinkAfterCompletionRedirect, CreatePaymentLinkLineItems,
+    CreatePaymentLinkShippingAddressCollection,
+    CreatePaymentLinkShippingAddressCollectionAllowedCountries, CreatePrice, CreateProduct,
+    Currency, PaymentLink, Price, Product,
 };
 
 use crate::{error::ShopResult, ENV};
@@ -49,19 +52,23 @@ pub async fn checkout(cart: Json<Cart>) -> ShopResult<Redirect> {
                     price: price.id.to_string(),
                     ..Default::default()
                 })
-                .collect::<Vec<_>>());
+                .collect::<Vec<_>>(),
+        );
 
         create_payment_link.after_completion = Some(CreatePaymentLinkAfterCompletion {
             type_: stripe::CreatePaymentLinkAfterCompletionType::Redirect,
             redirect: Some(CreatePaymentLinkAfterCompletionRedirect {
-                url: env.completion_redirect
+                url: env.completion_redirect,
             }),
             ..Default::default()
         });
 
-        create_payment_link.shipping_address_collection = Some(CreatePaymentLinkShippingAddressCollection {
-            allowed_countries: vec![CreatePaymentLinkShippingAddressCollectionAllowedCountries::Us]
-        });
+        create_payment_link.shipping_address_collection =
+            Some(CreatePaymentLinkShippingAddressCollection {
+                allowed_countries: vec![
+                    CreatePaymentLinkShippingAddressCollectionAllowedCountries::Us,
+                ],
+            });
 
         PaymentLink::create(&client, create_payment_link)
     }

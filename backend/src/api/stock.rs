@@ -72,8 +72,7 @@ pub async fn delete_stock(
 
     web::block(move || -> ShopResult<()> {
         let mut conn = pool.get()?;
-        diesel::delete(stock::table.filter(id.eq(item_id)))
-            .execute(&mut conn)?;
+        diesel::delete(stock::table.filter(id.eq(item_id))).execute(&mut conn)?;
         Ok(())
     })
     .await??;
@@ -97,7 +96,9 @@ pub fn init_stock() -> Result<(), BackendError> {
         })
         .collect();
 
-    let mut conn = SqliteConnection::establish(&ENV.get().cloned().unwrap_or_default().database_url).map_err(|e| BackendError::DbError(e.to_string()))?;
+    let mut conn =
+        SqliteConnection::establish(&ENV.get().cloned().unwrap_or_default().database_url)
+            .map_err(|e| BackendError::DbError(e.to_string()))?;
     diesel::insert_into(stock::table)
         .values(ins)
         .execute(&mut conn)?;

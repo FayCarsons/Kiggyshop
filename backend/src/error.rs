@@ -1,7 +1,7 @@
 use core::fmt;
 use std::env::VarError;
 
-use actix_web::{HttpResponse, ResponseError, error::BlockingError};
+use actix_web::{error::BlockingError, HttpResponse, ResponseError};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Error as SerdeError;

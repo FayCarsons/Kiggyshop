@@ -1,5 +1,8 @@
-use crate::{error::{FEResult, FrontendError}, utils::get_document};
-use common::{from_str, item::Item, to_string, CartMap, StockMap, log_debug};
+use crate::{
+    error::{FEResult, FrontendError},
+    utils::get_document,
+};
+use common::{from_str, item::Item, log_debug, to_string, CartMap, StockMap};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
 use yew::{Properties, Reducible};
@@ -86,6 +89,10 @@ pub enum CartAction {
 }
 
 impl Cart {
+    pub fn new() -> Self {
+        Self{ items: CartMap::new() }
+    }
+
     pub fn count(&self) -> u32 {
         self.items.values().into_iter().sum()
     }
@@ -105,13 +112,11 @@ impl Cart {
     pub fn from_cookie() -> Option<Self> {
         let document = get_document().ok();
         let document = if let Some(document) = document {
-            document 
+            document
         } else {
             log_debug!("Document is None");
-            return None
+            return None;
         };
-
-        
 
         let cookie = document.cookie();
         match cookie {
@@ -121,12 +126,12 @@ impl Cart {
                 if let Some(s) = s {
                     log_debug!("Substring: {}", s);
                     let deser = from_str::<Cart>(s);
-                        if let Ok(cart) = deser {
-                            Some(Cart::from(cart))
-                        } else {
-                            log_debug!("{:?}", deser );
-                            None
-                        }
+                    if let Ok(cart) = deser {
+                        Some(Cart::from(cart))
+                    } else {
+                        log_debug!("{:?}", deser);
+                        None
+                    }
                 } else {
                     log_debug!("Cookie is None");
                     None
@@ -139,7 +144,7 @@ impl Cart {
 
 impl From<CartMap> for Cart {
     fn from(value: CartMap) -> Self {
-        Cart {items: value}
+        Cart { items: value }
     }
 }
 
@@ -148,11 +153,11 @@ pub fn substring<'a>(source: &'a str, start: &'a str, end: &'a str) -> Option<&'
 
     if let Some(start_pos) = start_pos {
         let start_len = start.as_bytes().len();
-        let source = &source[start_pos+start_len..];
+        let source = &source[start_pos + start_len..];
         let end_pos = source.find(end);
-        
+
         if let Some(end_pos) = end_pos {
-            Some(&source[..end_pos+1])
+            Some(&source[..end_pos + 1])
         } else {
             None
         }

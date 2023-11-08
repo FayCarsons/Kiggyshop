@@ -38,6 +38,7 @@ async fn main() -> Result<(), std::io::Error> {
     ENV.get_or_try_init(|| -> Result<Env, BackendError> {
         let stripe_secret_key = std::env::var("STRIPE_SECRET_KEY")?;
         let init_db = std::env::var("INIT_DB")?
+            .to_lowercase()
             .parse::<bool>()
             .map_err(|e| BackendError::EnvError(e.to_string()))?;
         let admin_pass = std::env::var("ADMIN_PASS")?;
@@ -48,7 +49,7 @@ async fn main() -> Result<(), std::io::Error> {
             admin_pass,
             database_url,
             stripe_secret_key,
-            completion_redirect
+            completion_redirect,
         })
     })?;
 
@@ -58,12 +59,12 @@ async fn main() -> Result<(), std::io::Error> {
         init_stock()?;
     }
 
-    let manager = r2d2::ConnectionManager::<SqliteConnection>::new(
-        env.database_url
-    );
+    let manager = r2d2::ConnectionManager::<SqliteConnection>::new(env.database_url);
     let pool = r2d2::Pool::builder()
         .build(manager)
         .expect("INVALID DB URL // DB POOL CANNOT BE BUILT");
+
+
 
     HttpServer::new(move || {
         let logger = Logger::default();
@@ -84,11 +85,9 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(get_stock)
                     .service(get_orders)
                     .service(
-                        Files::new("/resources/images/", "./resources/images").show_files_listing(),
+                        Files::new("/resources", "./resources").show_files_listing(),
                     )
-                    .service(
-                        Files::new("/resources/fonts/", "./resources/fonts/").show_files_listing(),
-                    ),
+                    
             )
     })
     .bind(BIND)?

@@ -1,8 +1,26 @@
 use super::error::{ErrorType, FEResult, FrontendError};
 
+use gloo::console::log;
 use web_sys::HtmlDocument;
 use yew::AttrValue;
 
+pub type Color = [u8; 3];
+
+pub const PINK: Color = [255, 142, 173];
+pub const RED: Color = [228, 67, 66];
+pub const GREEN: Color = [125, 122, 25];
+
+pub fn tailwind_color(color: Color) -> AttrValue {
+    let [r, g, b] = color;
+    format!("#{r:X}{g:X}{b:X}").to_lowercase().into()
+}
+
+pub fn make_colors() {
+    [PINK, RED, GREEN].iter().zip(["kiggypink", "kiggyred", "kiggygreen"]).for_each(|(val, name)| {
+        let s = format!("{name}: {}", tailwind_color(*val));
+        log!(s)
+    })
+}
 
 pub fn title_to_path(title: &str) -> AttrValue {
     format!("/api/resources/images/{title}.png").into()
