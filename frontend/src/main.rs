@@ -7,7 +7,9 @@ pub mod utils;
 use context::{AppState, Cart};
 
 use common::HashMap;
-use components::{cart::CartPage, gallery::Gallery, suspense::Loading, product::ProductPage, header::Header};
+use components::{
+    cart::CartPage, gallery::Gallery, header::Header, product::ProductPage, suspense::Loading,
+};
 use utils::make_colors;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -19,7 +21,7 @@ pub enum Route {
     #[at("/")]
     Gallery,
     #[at("/product/:id")]
-    Product{id: i32},
+    Product { id: i32 },
     #[at("/cart")]
     Cart,
     #[not_found]
@@ -65,7 +67,7 @@ fn switch(routes: Route) -> Html {
     match routes {
         Route::Cart => html! {<CartPage />},
         Route::Gallery => html! {<Gallery/>},
-        Route::Product{id} => html!{
+        Route::Product { id } => html! {
             <div>
                 <Header count={Cart::from_cookie().unwrap().count()}/>
                 <ProductPage id={id}/>

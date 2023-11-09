@@ -69,6 +69,12 @@ impl Reducible for AppState {
     }
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        AppState {stock: None, ..Default::default()}
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, Properties)]
 pub struct Cart {
     pub items: CartMap,
@@ -90,7 +96,9 @@ pub enum CartAction {
 
 impl Cart {
     pub fn new() -> Self {
-        Self{ items: CartMap::new() }
+        Self {
+            items: CartMap::new(),
+        }
     }
 
     pub fn count(&self) -> u32 {
@@ -145,6 +153,12 @@ impl Cart {
 impl From<CartMap> for Cart {
     fn from(value: CartMap) -> Self {
         Cart { items: value }
+    }
+}
+
+impl Default for Cart {
+    fn default() -> Self {
+        Cart {items: CartMap::new()}
     }
 }
 

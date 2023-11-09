@@ -1,5 +1,8 @@
 use crate::{
-    components::{product::ProductPage, error::Error, footer::Footer}, context::AppAction, hooks::use_stock, Context, Route,
+    components::{error::Error, footer::Footer, product::ProductPage},
+    context::AppAction,
+    hooks::use_stock,
+    Context, Route,
 };
 
 use super::{header::Header, product::GalleryProduct};
@@ -13,7 +16,7 @@ pub fn gallery() -> HtmlResult {
 
     let stock = match stock {
         Ok(s) => s.clone(),
-        Err(_) => return Ok(html!{<Error/>})
+        Err(_) => return Ok(html! {<Error/>}),
     };
 
     let ctx = use_context::<Context>().unwrap();
@@ -23,16 +26,11 @@ pub fn gallery() -> HtmlResult {
     };
 
     let navigator = use_navigator().unwrap();
-    let onclick =  {
-        move |item: Item| {
-            navigator.push(&Route::Product{id: item.id})
-        }
-    };
+    let onclick = { move |item: Item| navigator.push(&Route::Product { id: item.id }) };
 
     let items = stock
         .iter()
         .map(|(id, item)| {
-            
             html! {
                 <GalleryProduct key={*id} product={item.clone()} onclick={onclick.clone()}/>
             }

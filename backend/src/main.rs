@@ -7,51 +7,55 @@ mod env;
 mod error;
 mod stripe;
 
-use env::Env;
-use std::sync::OnceLock;
-
-use admin::{dashboard, get_style, login, try_login, unauthorized};
+use actix_session::{
+    config::{BrowserSession, CookieContentSecurity},
+    storage::CookieSessionStore,
+    SessionMiddleware,
+};
+use admin::{
+    get_admin_dashboard, get_dashboard, get_style, login, post_admin_dashboard, post_dashboard,
+    try_login,
+};
 use api::{
     order::get_orders,
-    stock::{get_stock, init_stock},
+    stock::{delete_stock, get_item, get_stock, init_stock, put_item, update_item},
 };
+use env::{init_env, Env};
 use error::BackendError;
 
-use actix_files::Files;
+use std::sync::OnceLock;
 
+use actix_files::Files;
+use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::{
+    cookie::{Key, SameSite},
     middleware::{Compress, Logger},
     web, App, HttpServer,
 };
-use diesel::{r2d2, SqliteConnection};
 
+use diesel::{r2d2, SqliteConnection};
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 const BIND: (&str, u16) = ("localhost", 8081);
 static ENV: OnceLock<Env> = OnceLock::new();
+
+fn session_middleware() -> SessionMiddleware<CookieSessionStore> {
+    SessionMiddleware::builder(CookieSessionStore::default(), Key::from(&[0; 64]))
+        .cookie_name(String::from("admin-password"))
+        .cookie_secure(true)
+        .session_lifecycle(BrowserSession::default())
+        .cookie_same_site(SameSite::Strict)
+        .cookie_content_security(CookieContentSecurity::Private)
+        .cookie_http_only(true)
+        .build()
+}
 
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
     dotenv::dotenv().ok();
     env_logger::init();
 
-    ENV.get_or_try_init(|| -> Result<Env, BackendError> {
-        let stripe_secret_key = std::env::var("STRIPE_SECRET_KEY")?;
-        let init_db = std::env::var("INIT_DB")?
-            .to_lowercase()
-            .parse::<bool>()
-            .map_err(|e| BackendError::EnvError(e.to_string()))?;
-        let admin_pass = std::env::var("ADMIN_PASS")?;
-        let database_url = std::env::var("DATABASE_URL")?;
-        let completion_redirect = std::env::var("COMPLETION_REDIRECT")?;
-        Ok(Env {
-            init_db,
-            admin_pass,
-            database_url,
-            stripe_secret_key,
-            completion_redirect,
-        })
-    })?;
+    init_env()?;
 
     let env = ENV.get().cloned().unwrap_or_default();
 
@@ -59,35 +63,46 @@ async fn main() -> Result<(), std::io::Error> {
         init_stock()?;
     }
 
+    // DATABASE POOL BUILDING
     let manager = r2d2::ConnectionManager::<SqliteConnection>::new(env.database_url);
     let pool = r2d2::Pool::builder()
         .build(manager)
         .expect("INVALID DB URL // DB POOL CANNOT BE BUILT");
 
-
+    // RATE LIMITER CONFIG
+    let governor_conf = GovernorConfigBuilder::default()
+        .per_second(5)
+        .burst_size(25)
+        .finish()
+        .ok_or_else(|| BackendError::RateLimitError)?;
 
     HttpServer::new(move || {
         let logger = Logger::default();
         App::new()
             .wrap(logger)
             .wrap(Compress::default())
+            .wrap(session_middleware())
+            .wrap(Governor::new(&governor_conf))
             .app_data(web::Data::new(pool.clone()))
             .service(
                 web::scope("/admin")
                     .service(login)
                     .service(try_login)
-                    .service(dashboard)
-                    .service(unauthorized)
+                    .service(get_dashboard)
+                    .service(post_dashboard)
+                    .service(get_admin_dashboard)
+                    .service(post_admin_dashboard)
                     .service(get_style),
             )
             .service(
                 web::scope("/api")
                     .service(get_stock)
                     .service(get_orders)
-                    .service(
-                        Files::new("/resources", "./resources").show_files_listing(),
-                    )
-                    
+                    .service(update_item)
+                    .service(get_item)
+                    .service(put_item)
+                    .service(delete_stock)
+                    .service(Files::new("/resources", "./resources").show_files_listing()),
             )
     })
     .bind(BIND)?

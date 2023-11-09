@@ -39,7 +39,7 @@ impl Item {
 }
 
 #[cfg(feature = "backend")]
-#[derive(Insertable)]
+#[derive(Insertable, AsChangeset)]
 #[diesel(table_name = crate::schema::stock)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewItem<'a> {

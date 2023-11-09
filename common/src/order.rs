@@ -35,7 +35,7 @@ pub struct NewOrder<'a> {
     pub fulfilled: bool,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub enum OrderFilter {
     All,
     Fulfilled,

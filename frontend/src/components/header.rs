@@ -3,11 +3,9 @@ use crate::Route;
 use yew::{function_component, html, Html, Properties};
 use yew_router::prelude::Link;
 
-
-
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct HeaderProps {
-    pub count: u32
+    pub count: u32,
 }
 
 #[function_component(Header)]

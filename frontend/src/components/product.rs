@@ -1,7 +1,5 @@
 use common::item::Item;
-use yew::{
-    function_component, html, use_context, Callback, Html, MouseEvent, Properties,
-};
+use yew::{function_component, html, use_context, Callback, Html, MouseEvent, Properties};
 
 use crate::{
     context::{AppAction, CartAction},
@@ -36,7 +34,7 @@ pub fn gallery_product(props: &GalleryProps) -> Html {
             <img src={title_to_path(&title)} alt={title.clone()} class="w-full h-full object-cover transition duration-300 ease-in-out hover:scale-105" loading="lazy"/>
             <div class="absolute inset-0 flex flex-col items-center justify-center text-white bg-black bg-opacity-0 transition duration-300 opacity-0 hover:opacity-75 hover:bg-opacity-75" onclick={onclick}>
                 <h2 class="text-white text-2xl font-semibold mb-2">{title}</h2>
-                <p class="text-white mb-2">{format!("Qty: {quantity}")}</p>
+                {get_quantity_element(&quantity)}
                 <p class="text-white">{format!("${price}")}</p>
             </div>
         </div>
@@ -64,30 +62,37 @@ pub fn product_page(props: &FocusProps) -> Html {
 
     let (price, category) = kind_to_price_category(&kind);
 
-    
     let onclick = {
         let id = props.id;
         let ctx = ctx.clone();
-        move |_: MouseEvent| {
-            ctx.dispatch(AppAction::UpdateCart(CartAction::AddItem(id)))
-        }
+        move |_: MouseEvent| ctx.dispatch(AppAction::UpdateCart(CartAction::AddItem(id)))
     };
 
     html! {
-        <div class="flex flex-col md:flex-row items-center" >
-            <div class="md:w-1/2 p-4">
-                <img src={title_to_path(&title)} alt={title.clone()} class="w-full h-auto object-cover rounded-lg"/>
+        <div class="flex flex-col items-center md:flex-row md:justify-center" >
+            <div class="md:w-1/2 p-4 flex flex-col items-center justify-center">
+                <img src={title_to_path(&title)} alt={title.clone()} class="w-full h-auto object-cover lg"/>
             </div>
-            <div class="md:w-1/2 p-4">
+            <div class="md:w-1/2 p-4 text-center md:text-left">
                 <h1 class="text-3xl font-semibold mb-2">{title}</h1>
                 <p class="text-gray-500 mb-2">{category}</p>
                 <p class="text-gray-700 mb-4">{description}</p>
-                <div class="flex items-center mb-4">
+                <div class="flex items-center justify-center mb-4">
                     <span class="text-lg font-semibold text-gray-900 mr-2">{format!("${price}")}</span>
-                    <span class="text-gray-500">{quantity}</span>
+                    {get_quantity_element(quantity)}
                 </div>
-                <button class="bg-gray-800 hover:bg-gray-700 text-white py-2 px-6 rounded-full focus:outline-none focus:ring focus:ring-gray-300" {onclick}>{"Add to cart"}</button>
+                <button class="bg-gradient-to-r from-yellow-100 to-kiggypink hover:brightness-90 text-white py-2 px-4 md:px-6 rounded focus:ring focus:ring-gray-300" {onclick}>{"Add to cart"}</button>
             </div>
         </div>
+    }
+}
+
+fn get_quantity_element(quantity: &i32) -> Html {
+    match quantity {
+        0 => html! {<p class="text-kiggypink mb-2">{"out of stock :/"}</p>},
+        1..=10 => {
+            html! {<p class="text-kiggypink mb-2">{format!("only {quantity} available!")}</p>}
+        }
+        _ => html! {<></>},
     }
 }

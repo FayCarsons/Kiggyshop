@@ -16,10 +16,13 @@ pub fn tailwind_color(color: Color) -> AttrValue {
 }
 
 pub fn make_colors() {
-    [PINK, RED, GREEN].iter().zip(["kiggypink", "kiggyred", "kiggygreen"]).for_each(|(val, name)| {
-        let s = format!("{name}: {}", tailwind_color(*val));
-        log!(s)
-    })
+    [PINK, RED, GREEN]
+        .iter()
+        .zip(["kiggypink", "kiggyred", "kiggygreen"])
+        .for_each(|(val, name)| {
+            let s = format!("{name}: {}", tailwind_color(*val));
+            log!(s)
+        })
 }
 
 pub fn title_to_path(title: &str) -> AttrValue {
@@ -44,4 +47,10 @@ pub fn get_document() -> FEResult<HtmlDocument> {
             _type: ErrorType::JsError,
             inner: AttrValue::from(e.to_string().as_string().unwrap_or_default()),
         })
+}
+
+pub async fn fetch(url: &str) -> String {
+    let client = reqwest::Client::new();
+    let resp = client.get(url).send().await.unwrap();
+    resp.text().await.unwrap()
 }

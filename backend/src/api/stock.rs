@@ -1,10 +1,14 @@
 use common::{
     item::{InputItem, Item, NewItem},
-    schema::stock,
+    schema::stock::{self, id},
     StockMap,
 };
 
-use actix_web::{delete, get, put, web, HttpResponse};
+use actix_web::{
+    delete, get, put,
+    web::{self, Path},
+    HttpResponse,
+};
 use serde_json::to_string;
 use std::fs;
 
@@ -14,6 +18,23 @@ use crate::{
     error::{BackendError, ShopResult},
     DbPool, ENV,
 };
+
+#[get("/stock/get_single/{item_id}")]
+pub async fn get_item(item_id: Path<i32>, pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
+    let item_id = item_id.into_inner();
+    let item: Item = web::block(move || -> ShopResult<Item> {
+        let mut conn = pool.get()?;
+        Ok(stock::table
+            .filter(id.eq(item_id))
+            .select(Item::as_select())
+            .get_result(&mut conn)?)
+    })
+    .await??;
+
+    let json = to_string(&item)?;
+
+    Ok(HttpResponse::Ok().json(json))
+}
 
 #[get("/stock/get")]
 pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
@@ -39,8 +60,11 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
         .body(ser))
 }
 
-#[put("/stock/put")]
-pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<Item>) -> ShopResult<HttpResponse> {
+#[put("/stock/add")]
+pub async fn put_item(
+    pool: web::Data<DbPool>,
+    item: web::Json<InputItem>,
+) -> ShopResult<HttpResponse> {
     let item = item.into_inner();
 
     web::block(move || {
@@ -62,17 +86,51 @@ pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<Item>) -> ShopRes
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/stock/delete/{item_id}")]
+#[put("/stock/update/{item_id}")]
+pub async fn update_item(
+    item_id: Path<i32>,
+    new_fields: web::Json<InputItem>,
+    pool: web::Data<DbPool>,
+) -> ShopResult<HttpResponse> {
+    let item_id = item_id.into_inner();
+    let InputItem {
+        title,
+        kind,
+        description,
+        quantity,
+    } = new_fields.into_inner();
+
+    web::block(move || -> ShopResult<()> {
+        let new_item = NewItem {
+            title: &title,
+            kind: &kind,
+            description: &description,
+            quantity: quantity,
+        };
+
+        let mut conn = pool.get()?;
+        Ok(diesel::update(stock::dsl::stock)
+            .filter(id.eq(item_id))
+            .set(new_item)
+            .execute(&mut conn)
+            .and_then(|_| Ok(()))?)
+    })
+    .await??;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[delete("/stock/delete")]
 pub async fn delete_stock(
     pool: web::Data<DbPool>,
-    item_id: web::Path<i32>,
+    item_ids: web::Json<Vec<i32>>,
 ) -> ShopResult<HttpResponse> {
     use common::schema::stock::*;
-    let item_id = item_id.into_inner();
+    let item_ids = item_ids.into_inner();
 
     web::block(move || -> ShopResult<()> {
         let mut conn = pool.get()?;
-        diesel::delete(stock::table.filter(id.eq(item_id))).execute(&mut conn)?;
+        diesel::delete(stock::table.filter(id.eq_any(item_ids))).execute(&mut conn)?;
         Ok(())
     })
     .await??;

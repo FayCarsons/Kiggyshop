@@ -22,6 +22,7 @@ pub enum BackendError {
     DeserializationError(String),
     PaymentError(String),
     Unauthorized,
+    RateLimitError,
 }
 
 impl From<VarError> for BackendError {
@@ -89,6 +90,9 @@ impl From<BackendError> for String {
             BackendError::Unauthorized => {
                 "YOU are not authorized to access this content . . .".to_owned()
             }
+            BackendError::RateLimitError => {
+                "Unable to initialize rate limiter middleware".to_owned()
+            }
             BackendError::EnvError(s) => format!("Environment error: {s}"),
             BackendError::PaymentError(s) => format!("Payment error: {s}"),
         }
@@ -110,6 +114,7 @@ impl ResponseError for BackendError {
             Self::FileReadError(s) => HttpResponse::FailedDependency().body(s.clone()),
             Self::ResourceLocked(s) => HttpResponse::Locked().body(s.clone()),
             Self::Unauthorized => HttpResponse::Forbidden().body(""),
+            Self::RateLimitError => HttpResponse::Ok().finish(),
         }
     }
 }
