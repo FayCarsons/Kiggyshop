@@ -6,7 +6,7 @@ use common::{
 
 use actix_web::{
     delete, get, put,
-    web::{self, Path},
+    web::{self, Path, Json},
     HttpResponse,
 };
 use serde_json::to_string;
@@ -20,7 +20,7 @@ use crate::{
 };
 
 #[get("/stock/get_single/{item_id}")]
-pub async fn get_item(item_id: Path<i32>, pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
+pub async fn get_item(item_id: Path<i32>, pool: web::Data<DbPool>) -> ShopResult<web::Json<Item>> {
     let item_id = item_id.into_inner();
     let item: Item = web::block(move || -> ShopResult<Item> {
         let mut conn = pool.get()?;
@@ -31,9 +31,7 @@ pub async fn get_item(item_id: Path<i32>, pool: web::Data<DbPool>) -> ShopResult
     })
     .await??;
 
-    let json = to_string(&item)?;
-
-    Ok(HttpResponse::Ok().json(json))
+    Ok(web::Json(item))
 }
 
 #[get("/stock/get")]

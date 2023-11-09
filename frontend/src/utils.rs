@@ -1,8 +1,8 @@
 use super::error::{ErrorType, FEResult, FrontendError};
 
-use gloo::console::log;
+use gloo::{console::log, net::http::Request};
 use web_sys::HtmlDocument;
-use yew::AttrValue;
+use yew::{AttrValue, html, Html};
 
 pub type Color = [u8; 3];
 
@@ -26,6 +26,7 @@ pub fn make_colors() {
 }
 
 pub fn title_to_path(title: &str) -> AttrValue {
+    let title = title.replace(" ", "");
     format!("/api/resources/images/{title}.png").into()
 }
 
@@ -49,8 +50,17 @@ pub fn get_document() -> FEResult<HtmlDocument> {
         })
 }
 
+pub fn get_quantity_element(quantity: &i32) -> Html {
+    match quantity {
+        0 => html! {<p class="text-kiggyred mb-2">{"out of stock :/"}</p>},
+        1..=10 => {
+            html! {<p class="text-kiggyred mb-2">{format!("only {quantity} available!")}</p>}
+        }
+        _ => html! {<></>},
+    }
+}
+
 pub async fn fetch(url: &str) -> String {
-    let client = reqwest::Client::new();
-    let resp = client.get(url).send().await.unwrap();
-    resp.text().await.unwrap()
+    let resp = Request::get(url).send().await.unwrap().text().await.unwrap();
+    resp
 }

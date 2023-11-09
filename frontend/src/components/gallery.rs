@@ -5,7 +5,7 @@ use crate::{
     Context, Route,
 };
 
-use super::{header::Header, product::GalleryProduct};
+use super::{header::Header, product_card::ProductCard};
 use common::item::Item;
 use yew::{function_component, html, use_context, Html, HtmlResult};
 use yew_router::prelude::use_navigator;
@@ -32,7 +32,7 @@ pub fn gallery() -> HtmlResult {
         .iter()
         .map(|(id, item)| {
             html! {
-                <GalleryProduct key={*id} product={item.clone()} onclick={onclick.clone()}/>
+                <ProductCard key={*id} product={item.clone()} onclick={onclick.clone()}/>
             }
         })
         .collect::<Html>();

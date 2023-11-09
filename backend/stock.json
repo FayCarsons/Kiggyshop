@@ -1,74 +1,74 @@
 [
-    {
-      "title": "cat",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "fish",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "god",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "moth",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "mushroom",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "red",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "spiral",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "spirit",
-      "kind": "SmallPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "spore",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "tears",
-      "kind": "BigPrint",
-      "description": "Really Good piece my girlfriend liks  a lot :3",
-      "quantity": 420
-    },
-    {
-      "title": "tiger",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    },
-    {
-      "title": "yourgods",
-      "kind": "BigPrint",
-      "description": "TODO",
-      "quantity": 420
-    }
-  ]
+  {
+    "title": "cat",
+    "kind": "BigPrint",
+    "description": "8\"  x 17\" print from a local print shop with high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "fish",
+    "kind": "BigPrint",
+    "description": "8.5\" x 11\" print from a local print shop with high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "prayer",
+    "kind": "BigPrint",
+    "description": "11\" x 7.5\" print from a local print shop with high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "moth",
+    "kind": "BigPrint",
+    "description": "8.5\" x 8.5\" print from a local print shop with high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "mushroom",
+    "kind": "BigPrint",
+    "description": "8.5\" x 11\" print from a local print shop with high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "red",
+    "kind": "BigPrint",
+    "description": "8\" x 12\" print from a local print shop on high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "spiral",
+    "kind": "BigPrint",
+    "description": "11\" x 8.5\" print from a local print shop on high quality 100lb silk cover paper!",
+    "quantity": 20
+  },
+  {
+    "title": "spirit",
+    "kind": "SmallPrint",
+    "description": "7\" x 5\" print from a local print shop on high quality 100lb silk cover paper!",
+    "quantity": 20
+  },
+  {
+    "title": "spore",
+    "kind": "BigPrint",
+    "description": "8.5\" x 11\" print from a local print shop on high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "tears",
+    "kind": "BigPrint",
+    "description": "8.5\" x 11\" print fifth and final piece from the 'preface' series now on high quality 100lb silk cover paper from a local print shop :)",
+    "quantity": 20
+  },
+  {
+    "title": "tiger",
+    "kind": "BigPrint",
+    "description": "8.5\" x 11\" print from a local print shop on high quality 100lb silk cover paper",
+    "quantity": 20
+  },
+  {
+    "title": "your gods",
+    "kind": "BigPrint",
+    "description": "8.5\" x 11\" print from a local print shop on high quality 100lb silk cover paper",
+    "quantity": 20
+  }
+]

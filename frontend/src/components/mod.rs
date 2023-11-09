@@ -6,3 +6,4 @@ pub mod gallery;
 pub mod header;
 pub mod product;
 pub mod suspense;
+pub mod product_card;

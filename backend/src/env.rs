@@ -16,7 +16,6 @@ pub fn init_env() -> ShopResult<()> {
     ENV.get_or_try_init(|| -> ShopResult<Env> {
         let stripe_secret_key = std::env::var("STRIPE_SECRET_KEY")?;
         let init_db = std::env::var("INIT_DB")?
-            .to_lowercase()
             .parse::<bool>()
             .map_err(|e| BackendError::EnvError(e.to_string()))?;
         let admin_pass = std::env::var("ADMIN_PASS")?;

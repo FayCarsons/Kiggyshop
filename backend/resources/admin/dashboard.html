@@ -307,9 +307,7 @@
             );
           }
 
-          const { title, kind, description, quantity } = JSON.parse(
-            await response.json()
-          );
+          const { title, kind, description, quantity } = await response.json();
 
           const modal = document.getElementById("editStockModal");
           modal.style.display = "block";

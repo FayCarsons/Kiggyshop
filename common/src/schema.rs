@@ -32,4 +32,8 @@ diesel::table! {
 
 diesel::joinable!(carts -> orders (order_id));
 
-diesel::allow_tables_to_appear_in_same_query!(carts, orders, stock,);
+diesel::allow_tables_to_appear_in_same_query!(
+    carts,
+    orders,
+    stock,
+);
