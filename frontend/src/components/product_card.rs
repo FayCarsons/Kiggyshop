@@ -1,7 +1,7 @@
 use common::item::Item;
-use yew::{function_component, Properties, Callback, Html, html};
+use yew::{function_component, html, Callback, Html, Properties};
 
-use crate::utils::{kind_to_price_category, title_to_path, get_quantity_element};
+use crate::utils::{get_quantity_element, kind_to_price_category, title_to_path};
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct CardProps {
@@ -25,15 +25,15 @@ pub fn product_card(props: &CardProps) -> Html {
         move |_| props.clone().onclick.emit(props.clone().product)
     };
 
-    // Change from image darkening on hover to fade to white 
+    // Change from image darkening on hover to fade to white
     // or, last resort, blurring
     html! {
         <div class="max-w-full overflow-hidden shadow-lg transition duration-300 transform hover:scale-105 aspect-square">
             <img src={title_to_path(&title)} alt={title.clone()} class="w-full h-full object-cover transition duration-300 ease-in-out hover:scale-105" loading="lazy"/>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-white bg-black bg-opacity-0 transition duration-300 opacity-0 hover:opacity-75 hover:bg-opacity-75" onclick={onclick}>
-                <h2 class="text-kiggyred text-2xl font-semibold mb-2">{title}</h2>
+            <div class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-0 transition duration-300 opacity-0 hover:opacity-100 hover:bg-opacity-75" onclick={onclick}>
+                <h2 class="text-kiggypink text-4xl font-semibold mb-2 opacity-100">{title}</h2>
                 {get_quantity_element(&quantity)}
-                <p class="text-kiggypink">{format!("${price}")}</p>
+                <p class="text-kiggygreen text-2xl opacity-100">{format!("${price}")}</p>
             </div>
         </div>
     }

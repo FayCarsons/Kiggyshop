@@ -8,7 +8,8 @@ use context::{AppState, Cart};
 
 use common::HashMap;
 use components::{
-    cart::CartPage, gallery::Gallery, header::Header, product::ProductPage, suspense::Loading,
+    cart::CartPage, footer::Footer, gallery::Gallery, header::Header, product::ProductPage,
+    suspense::Loading,
 };
 use utils::make_colors;
 use yew::prelude::*;
@@ -65,12 +66,19 @@ fn main() {
 
 fn switch(routes: Route) -> Html {
     match routes {
-        Route::Cart => html! {<CartPage />},
+        Route::Cart => html! {
+            <div class="flex flex-col min-h-screen">
+                <Header count={Cart::from_cookie().unwrap_or_default().count()}/>
+                <CartPage/>
+                <Footer/>
+            </div>
+        },
         Route::Gallery => html! {<Gallery/>},
         Route::Product { id } => html! {
-            <div>
-                <Header count={Cart::from_cookie().unwrap().count()}/>
+            <div class="flex flex-col min-h-screen">
+                <Header count={Cart::from_cookie().unwrap_or_default().count()}/>
                 <ProductPage id={id}/>
+                <Footer/>
             </div>
         },
         Route::NotFound => html! {<h1>{"four owo four: not fownd :/"}</h1>},

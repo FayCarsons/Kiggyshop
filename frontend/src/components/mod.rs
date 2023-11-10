@@ -5,5 +5,7 @@ pub mod footer;
 pub mod gallery;
 pub mod header;
 pub mod product;
-pub mod suspense;
 pub mod product_card;
+pub mod suspense;
+pub mod raw_html;
+pub mod svg;

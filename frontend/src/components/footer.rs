@@ -1,18 +1,21 @@
+use crate::{utils::{Palette, KSVG}, components::svg::{Instagram, Twitter, LinkedIn}};
 use yew::{function_component, html, Html};
 
 #[function_component(Footer)]
 pub fn footer() -> Html {
+
+    let (width, height) = (24,24);
     html! {
-        <footer class="bg-kiggygreen p-4 text-center">
+        <footer class="bg-kiggygreen p-4 text-center mt-auto">
             <div class="flex justify-center space-x-4">
                 <a href="www.instagram.com/k1ggy" target="_blank" rel="noopener noreferrer">
-                    <img src="/api/resources/icons/instagram.svg" alt="instagram" class="w-8 h-8"/>
+                    <Instagram {width} {height} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
                 </a>
                 <a href="www.instagram.com/k1ggy" target="_blank" rel="noopener noreferrer">
-                    <img src="/api/resources/icons/twitter.svg" alt="twitter" class="w-8 h-8"/>
+                    <Twitter {width} {height} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
                 </a>
                 <a href="www.instagram.com/k1ggy" target="_blank" rel="noopener noreferrer">
-                    <img src="/api/resources/icons/linkedin.svg" alt="linkedin" class="w-8 h-8"/>
+                    <LinkedIn {width} {height} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
                 </a>
                 <button class="text-white font-mono">{"contact me"}</button>
             </div>

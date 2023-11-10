@@ -71,7 +71,10 @@ impl Reducible for AppState {
 
 impl Default for AppState {
     fn default() -> Self {
-        AppState {stock: None, ..Default::default()}
+        AppState {
+            stock: None,
+            ..Default::default()
+        }
     }
 }
 
@@ -158,7 +161,9 @@ impl From<CartMap> for Cart {
 
 impl Default for Cart {
     fn default() -> Self {
-        Cart {items: CartMap::new()}
+        Cart {
+            items: CartMap::new(),
+        }
     }
 }
 

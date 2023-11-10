@@ -6,7 +6,7 @@ use common::{
 
 use actix_web::{
     delete, get, put,
-    web::{self, Path, Json},
+    web::{self, Path},
     HttpResponse,
 };
 use serde_json::to_string;

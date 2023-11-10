@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use yew::{AttrValue, Properties};
+use yew::{AttrValue, Html, Properties};
 
 #[cfg(feature = "backend")]
 use diesel::prelude::*;
