@@ -55,29 +55,6 @@ pub fn make_colors() {
         })
 }
 
-#[derive(Clone, PartialEq, Properties)]
-pub struct SvgProps {
-    pub src: AttrValue,
-    pub class: AttrValue,
-    pub alt: AttrValue,
-    pub color: Palette,
-}
-
-#[function_component(KSVG)]
-pub fn ksvg(
-    SvgProps {
-        src,
-        color,
-        class,
-        alt,
-    }: &SvgProps,
-) -> Html {
-    let color = color.hex_color();
-    html! {
-        <img {src} {class} style={format!("fill: {c}; color: {c};",c=color)} {alt}/>
-    }
-}
-
 pub fn title_to_path(title: &str) -> AttrValue {
     let title = title.replace(" ", "");
     format!("/api/resources/images/{title}.png").into()

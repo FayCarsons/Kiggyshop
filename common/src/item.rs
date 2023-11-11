@@ -45,7 +45,7 @@ impl Default for Item {
             title: Default::default(),
             kind: Default::default(),
             description: Default::default(),
-            quantity: Default::default()
+            quantity: Default::default(),
         }
     }
 }

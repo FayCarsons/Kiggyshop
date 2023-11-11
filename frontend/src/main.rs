@@ -8,9 +8,15 @@ use context::{AppState, Cart};
 
 use common::HashMap;
 use components::{
-    cart::{CartPage, CartDropdown}, footer::Footer, gallery::Gallery, header::Header, product::ProductPage,
-    suspense::Loading, error::Error,
+    cart::{CartDropdown, CartPage},
+    error::Error,
+    footer::Footer,
+    gallery::Gallery,
+    header::Header,
+    product::ProductPage,
+    suspense::Loading,
 };
+use gloo::console::log;
 use utils::make_colors;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -61,11 +67,12 @@ fn app() -> Html {
 }
 
 fn main() {
+    log!("Main is rendering");
     yew::Renderer::<App>::new().render();
 }
 
 fn switch(routes: Route) -> Html {
-    let onclick = Callback::from(|_:MouseEvent| {});
+    let onclick = Callback::from(|_: MouseEvent| {});
 
     match routes {
         Route::Cart => html! {

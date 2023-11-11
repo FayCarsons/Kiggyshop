@@ -1,11 +1,13 @@
-use crate::{utils::{Palette, KSVG}, components::svg::{Instagram, Twitter, LinkedIn}};
+use crate::{
+    components::svg::{Instagram, LinkedIn, Twitter},
+    utils::Palette,
+};
 use web_sys::MouseEvent;
-use yew::{function_component, html, Html, Callback};
+use yew::{function_component, html, Callback, Html};
 
 #[function_component(Footer)]
 pub fn footer() -> Html {
-
-    let (width, height) = (24,24);
+    let (width, height) = (24, 24);
     html! {
         <footer class="bg-kiggygreen p-4 text-center mt-auto">
             <div class="flex justify-center space-x-4">

@@ -1,7 +1,8 @@
 use common::item::Item;
 use web_sys::MouseEvent;
 use yew::{
-    function_component, html, use_context, Callback, Html, HtmlResult, Properties, Suspense, AttrValue, UseStateHandle,
+    function_component, html, use_context, AttrValue, Callback, Html, HtmlResult, Properties,
+    Suspense, UseStateHandle,
 };
 use yew_router::prelude::use_navigator;
 
@@ -133,7 +134,7 @@ fn cart_html(CartGutsProps { item, qty, onclick }: &CartGutsProps) -> Html {
             </div>
             <div class="flex justify-center">
                 <button class="text-gray-600 w-3">{"-"}</button>
-                <input class="mx-2 my-auto border text-center w-8 h-8" type="text" value={qty.to_string()}/>
+                <input name="quantity" class="mx-2 my-auto border text-center w-8 h-8" type="text" value={qty.to_string()}/>
                 <button class="text-gray-600 w-3">{"+"}</button>
             </div>
             <span class="text-center w-1/5 font-semibold text-sm">{price}</span>
@@ -156,15 +157,20 @@ pub fn cart_dropdown(DropDownProps { onclick }: &DropDownProps) -> Html {
     let ctx = use_context::<Context>().unwrap();
     let total = ctx.get_total();
 
-    let products = ctx.cart.items.iter().map(|(id, quantity)| {
-        let item = ctx.get_item(*id);
-        match item {
-            Some(item) => html!{<DropdownItem item={item.clone()} {quantity}/>},
-            None => html!{<Error/>}
-        }
-    }).collect::<Html>(); 
+    let products = ctx
+        .cart
+        .items
+        .iter()
+        .map(|(id, quantity)| {
+            let item = ctx.get_item(*id);
+            match item {
+                Some(item) => html! {<DropdownItem item={item.clone()} {quantity}/>},
+                None => html! {<Error/>},
+            }
+        })
+        .collect::<Html>();
 
-    html!{
+    html! {
         <div class="fixed top-0 right-0 bottom-0 bg-white w-64 p-4 border-1 shadow-lg">
             <Burger width={24} height={24} alt="cart button" color={Palette::Green} class="lg:hidden" onclick={onclick.clone().unwrap_or(Callback::from(|_| {}))}/>
             <h2 class="text-xl font-bold mb-4">{"cart"}</h2>
@@ -184,16 +190,21 @@ pub fn cart_dropdown(DropDownProps { onclick }: &DropDownProps) -> Html {
 #[derive(Clone, PartialEq, Properties)]
 pub struct DropDownItemProps {
     item: Item,
-    quantity: u32
+    quantity: u32,
 }
 
 #[function_component(DropdownItem)]
 fn dropdown_item(DropDownItemProps { item, quantity }: &DropDownItemProps) -> Html {
-
-    let Item { id, title, kind, description, .. } = item;
+    let Item {
+        id,
+        title,
+        kind,
+        description,
+        ..
+    } = item;
     let (price, _) = kind_to_price_category(&kind);
 
-    html!{
+    html! {
         <div key={*id} class="flex items-center mb-2">
             <img src={title_to_path(&title)} alt={AttrValue::from(description.clone())} class="w-16 h-16 object-cover mr-2"/>
             <div class="flex-grow">

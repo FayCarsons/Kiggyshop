@@ -1,11 +1,13 @@
 use common::{from_str, item::Item, StockMap};
 use yew::{
     function_component, html, platform::spawn_local, suspense::SuspensionResult, use_context,
-    Callback, Html, HtmlResult, MouseEvent, Properties, Suspense, use_state,
+    use_state, Callback, Html, HtmlResult, MouseEvent, Properties, Suspense,
 };
 
 use crate::{
-    components::{error::Error, suspense::Loading, header::Header, footer::Footer, cart::CartDropdown},
+    components::{
+        cart::CartDropdown, error::Error, footer::Footer, header::Header, suspense::Loading,
+    },
     context::{AppAction, CartAction},
     hooks::use_item,
     utils::{fetch, get_quantity_element, kind_to_price_category, title_to_path},
@@ -38,12 +40,10 @@ pub fn product_page(props: &ProductPageProps) -> Html {
     let show_cart = use_state(|| false);
     let set_cart = {
         let show_cart = show_cart.clone();
-        move |_| {
-            show_cart.set(! *show_cart)
-        }
+        move |_| show_cart.set(!*show_cart)
     };
 
-    html!{
+    html! {
         <div class="flex flex-col min-h-screen">
             <div class="hidden lg:block">
                 <CartDropdown onclick={None::<Callback<MouseEvent>>}/>
@@ -112,8 +112,8 @@ pub fn product(ProductProps { item, onclick }: &ProductProps) -> Html {
                     <span class="text-lg font-semibold text-gray-900 mr-2">{format!("${price}")}</span>
                     {get_quantity_element(&quantity)}
                 </div>
-                <button 
-                    class="bg-gradient-to-l from-yellow-300 to-kiggypink 
+                <button
+                    class="bg-gradient-to-l from-yellow-300 to-kiggypink
                             brightness-100 text-white py-2 px-4 md:px-6 
                             rounded transiition duration-300 ease-in-out 
                             hover:brightness-90 focus:ring focus:ring-kiggypink" 

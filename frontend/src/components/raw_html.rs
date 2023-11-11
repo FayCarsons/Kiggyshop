@@ -1,11 +1,10 @@
-use yew::{function_component, Properties, AttrValue, Html};
+use yew::{function_component, AttrValue, Html, Properties};
 
 use crate::utils::get_document;
 
-
 #[derive(Clone, PartialEq, Properties)]
 pub struct RawHtmlProps {
-    pub inner: AttrValue
+    pub inner: AttrValue,
 }
 
 #[function_component(RawHtml)]

@@ -1,5 +1,5 @@
 use crate::{
-    components::{error::Error, footer::Footer, cart::CartDropdown},
+    components::{cart::CartDropdown, error::Error, footer::Footer},
     context::AppAction,
     hooks::use_stock,
     Context, Route,
@@ -7,23 +7,24 @@ use crate::{
 
 use super::{header::Header, product_card::ProductCard};
 use common::item::Item;
+use gloo::console::log;
 use web_sys::MouseEvent;
-use yew::{function_component, html, use_context, Html, HtmlResult, Callback, use_state};
+use yew::{function_component, html, use_context, use_state, Callback, Html, HtmlResult};
 use yew_router::prelude::use_navigator;
 
 #[function_component(Gallery)]
 pub fn gallery() -> HtmlResult {
+    log!("gallery is rendering");
     let stock = use_stock()?;
 
     let mut stock = match stock {
         Ok(s) => s.clone(),
         Err(_) => return Ok(html! {<Error/>}),
     };
-
     stock.shrink_to_fit();
 
     let ctx = use_context::<Context>().unwrap();
-    {
+    if ctx.stock.is_none() {
         let stock = stock.clone();
         ctx.dispatch(AppAction::LoadStock(stock))
     };
@@ -45,28 +46,30 @@ pub fn gallery() -> HtmlResult {
     let show_cart = use_state(|| false);
     let set_cart = {
         let show_cart = show_cart.clone();
-        move |_:MouseEvent| {
-            show_cart.set(! *show_cart);
+        move |_: MouseEvent| {
+            show_cart.set(!*show_cart);
         }
     };
 
     Ok(html! {
-        <div class="flex">
-                <div class="fixed left-0 ml-auto w-64 h-full hidden md:block z-0 transition-all duration-300 ease-in-out">
+        <div class="flex w-full h-full">
+                <div class="fixed flex-none left-0 ml-0 min-w-64 h-full hidden md:block">
                     <CartDropdown onclick={None::<Callback<MouseEvent>>}/>
                 </div>
-                <div class="container flex-grow max-w-full bg-slate-50 z-0">
-                    <Header onclick={set_cart.clone()}/>
+
+                if *show_cart {
+                    <div class="fixed flex-none block min-w-64 h-full">
+                        <CartDropdown onclick={set_cart.clone()}/>
+                    </div>
+                }
+
+                <div class="flex-auto max-w-full bg-slate-50">
+                    <Header onclick={set_cart}/>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                         {items}
                     </div>
                     <Footer/>
                 </div>
-                if *show_cart {
-                    <div class={format!("fixed right-0 w-64 h-full z-0 transition-all duration-300 ease-in-out {}", if *show_cart {"block"} else {"hidden"})}>
-                        <CartDropdown onclick={set_cart}/>
-                    </div>
-                }
         </div>
     })
 }

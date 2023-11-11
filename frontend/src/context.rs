@@ -53,12 +53,18 @@ impl AppState {
 
     pub fn get_total(&self) -> f64 {
         self.cart.items.iter().fold(0., |total, (id, quantity)| {
-            let item = self.stock.clone().unwrap_or_default().get(id).cloned().unwrap_or_default();
+            let item = self
+                .stock
+                .clone()
+                .unwrap_or_default()
+                .get(id)
+                .cloned()
+                .unwrap_or_default();
             let price = match item.kind.as_str() {
                 "BigPrint" => 20.,
                 "SmallPrint" => 7.,
                 "Button" => 3.,
-                _ => 0.
+                _ => 0.,
             };
             total + price * *quantity as f64
         })
@@ -86,7 +92,7 @@ impl Default for AppState {
     fn default() -> Self {
         AppState {
             stock: None,
-            ..Default::default()
+            cart: Cart::default()
         }
     }
 }
@@ -151,7 +157,9 @@ impl Cart {
                     log_debug!("Substring: {}", s);
                     let deser = from_str::<Cart>(s);
                     if let Ok(cart) = deser {
-                        Some(Cart::from(cart))
+                        let mut cart = Cart::from(cart);
+                        cart.items.shrink_to_fit();
+                        Some(cart)
                     } else {
                         log_debug!("{:?}", deser);
                         None
