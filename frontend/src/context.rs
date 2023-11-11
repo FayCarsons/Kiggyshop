@@ -50,6 +50,19 @@ impl AppState {
     pub fn get_item(&self, id: i32) -> Option<&Item> {
         self.stock.as_ref().and_then(|stock| stock.get(&id))
     }
+
+    pub fn get_total(&self) -> f64 {
+        self.cart.items.iter().fold(0., |total, (id, quantity)| {
+            let item = self.stock.clone().unwrap_or_default().get(id).cloned().unwrap_or_default();
+            let price = match item.kind.as_str() {
+                "BigPrint" => 20.,
+                "SmallPrint" => 7.,
+                "Button" => 3.,
+                _ => 0.
+            };
+            total + price * *quantity as f64
+        })
+    }
 }
 
 impl Reducible for AppState {

@@ -1,5 +1,6 @@
 use crate::{utils::{Palette, KSVG}, components::svg::{Instagram, Twitter, LinkedIn}};
-use yew::{function_component, html, Html};
+use web_sys::MouseEvent;
+use yew::{function_component, html, Html, Callback};
 
 #[function_component(Footer)]
 pub fn footer() -> Html {
@@ -9,13 +10,13 @@ pub fn footer() -> Html {
         <footer class="bg-kiggygreen p-4 text-center mt-auto">
             <div class="flex justify-center space-x-4">
                 <a href="www.instagram.com/k1ggy" target="_blank" rel="noopener noreferrer">
-                    <Instagram {width} {height} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
+                    <Instagram {width} {height} onclick={None::<Callback<MouseEvent>>} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
                 </a>
                 <a href="www.instagram.com/k1ggy" target="_blank" rel="noopener noreferrer">
-                    <Twitter {width} {height} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
+                    <Twitter {width} {height} onclick={None::<Callback<MouseEvent>>} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
                 </a>
                 <a href="www.instagram.com/k1ggy" target="_blank" rel="noopener noreferrer">
-                    <LinkedIn {width} {height} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
+                    <LinkedIn {width} {height} onclick={None::<Callback<MouseEvent>>} alt="instagram" class="w-8 h-8" color={Palette::Pink}/>
                 </a>
                 <button class="text-white font-mono">{"contact me"}</button>
             </div>

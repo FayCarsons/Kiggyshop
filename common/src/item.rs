@@ -38,6 +38,18 @@ impl Item {
     }
 }
 
+impl Default for Item {
+    fn default() -> Self {
+        Item {
+            id: Default::default(),
+            title: Default::default(),
+            kind: Default::default(),
+            description: Default::default(),
+            quantity: Default::default()
+        }
+    }
+}
+
 #[cfg(feature = "backend")]
 #[derive(Insertable, AsChangeset)]
 #[diesel(table_name = crate::schema::stock)]

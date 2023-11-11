@@ -1,11 +1,11 @@
 use common::{from_str, item::Item, StockMap};
 use yew::{
     function_component, html, platform::spawn_local, suspense::SuspensionResult, use_context,
-    Callback, Html, HtmlResult, MouseEvent, Properties, Suspense,
+    Callback, Html, HtmlResult, MouseEvent, Properties, Suspense, use_state,
 };
 
 use crate::{
-    components::{error::Error, suspense::Loading},
+    components::{error::Error, suspense::Loading, header::Header, footer::Footer, cart::CartDropdown},
     context::{AppAction, CartAction},
     hooks::use_item,
     utils::{fetch, get_quantity_element, kind_to_price_category, title_to_path},
@@ -23,7 +23,7 @@ pub fn product_page(props: &ProductPageProps) -> Html {
 
     let fallback = html! {<Loading/>};
 
-    if ctx.stock.is_none() || !ctx.stock.as_ref().unwrap().contains_key(&props.id) {
+    let child = if ctx.stock.is_none() || !ctx.stock.as_ref().unwrap().contains_key(&props.id) {
         html! {
             <Suspense {fallback}>
                 <SuspendProduct id={props.id}/>
@@ -33,6 +33,26 @@ pub fn product_page(props: &ProductPageProps) -> Html {
         html! {
             <SyncProduct id={props.id}/>
         }
+    };
+
+    let show_cart = use_state(|| false);
+    let set_cart = {
+        let show_cart = show_cart.clone();
+        move |_| {
+            show_cart.set(! *show_cart)
+        }
+    };
+
+    html!{
+        <div class="flex flex-col min-h-screen">
+            <div class="hidden lg:block">
+                <CartDropdown onclick={None::<Callback<MouseEvent>>}/>
+            </div>
+            <Header onclick={set_cart.clone()}/>
+            {child}
+            <Footer/>
+            if *show_cart {<CartDropdown onclick={Some(set_cart)}/>}
+        </div>
     }
 }
 

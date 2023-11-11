@@ -1,17 +1,19 @@
 use common::item::Item;
 use web_sys::MouseEvent;
 use yew::{
-    function_component, html, use_context, Callback, Html, HtmlResult, Properties, Suspense,
+    function_component, html, use_context, Callback, Html, HtmlResult, Properties, Suspense, AttrValue, UseStateHandle,
 };
 use yew_router::prelude::use_navigator;
 
 use crate::{
-    components::error::Error,
+    components::{error::Error, svg::Burger},
     context::{AppAction, CartAction},
     hooks::use_item,
-    utils::{kind_to_price_category, title_to_path},
+    utils::{kind_to_price_category, title_to_path, Palette},
     Context, Route,
 };
+
+// "OLD" CART PAGE, CART IS ENTIRE SEPARATE PAGE/ROUTE BLAH BLAH
 
 #[function_component(CartPage)]
 pub fn cart() -> Html {
@@ -141,14 +143,69 @@ fn cart_html(CartGutsProps { item, qty, onclick }: &CartGutsProps) -> Html {
     }
 }
 
-/*
-<div class="bg-white rounded-lg p-6 flex items-center space-x-4 shadow-md">
+// <<<!--- NEW CODE THAT IS SUPPOSED TO REPLACE THAT^ CODE ---!>>>
+// SWITCH TO DROPDOWN
 
-            <div>
-                <h2 class="text-lg font-semibold">{item.title.clone()}</h2>
-                <p class="text-gray-500">{format!("${}", item.price())}</p>
-                <p class="text-gray-500">{format!("qty: {qty}")}</p>
+#[derive(Clone, PartialEq, Properties)]
+pub struct DropDownProps {
+    pub onclick: Option<Callback<MouseEvent>>,
+}
 
+#[function_component(CartDropdown)]
+pub fn cart_dropdown(DropDownProps { onclick }: &DropDownProps) -> Html {
+    let ctx = use_context::<Context>().unwrap();
+    let total = ctx.get_total();
+
+    let products = ctx.cart.items.iter().map(|(id, quantity)| {
+        let item = ctx.get_item(*id);
+        match item {
+            Some(item) => html!{<DropdownItem item={item.clone()} {quantity}/>},
+            None => html!{<Error/>}
+        }
+    }).collect::<Html>(); 
+
+    html!{
+        <div class="fixed top-0 right-0 bottom-0 bg-white w-64 p-4 border-1 shadow-lg">
+            <Burger width={24} height={24} alt="cart button" color={Palette::Green} class="lg:hidden" onclick={onclick.clone().unwrap_or(Callback::from(|_| {}))}/>
+            <h2 class="text-xl font-bold mb-4">{"cart"}</h2>
+            <div class="mb-4">
+                {products}
             </div>
+
+            <div class="border-t pt-2 mb-4">
+                <p class="text-sm font-semiboold">{format!("total: ${}", total)}</p>
+            </div>
+
+            <button class="bg-kiggygreen text-whitepy-2 px-4 rounded hover:brightness-90">{"checkout"}</button>
         </div>
-*/
+    }
+}
+
+#[derive(Clone, PartialEq, Properties)]
+pub struct DropDownItemProps {
+    item: Item,
+    quantity: u32
+}
+
+#[function_component(DropdownItem)]
+fn dropdown_item(DropDownItemProps { item, quantity }: &DropDownItemProps) -> Html {
+
+    let Item { id, title, kind, description, .. } = item;
+    let (price, _) = kind_to_price_category(&kind);
+
+    html!{
+        <div key={*id} class="flex items-center mb-2">
+            <img src={title_to_path(&title)} alt={AttrValue::from(description.clone())} class="w-16 h-16 object-cover mr-2"/>
+            <div class="flex-grow">
+                <p class="text-sm font-semibold">{title}</p>
+                <button class="text-red-500">{"x"}</button>
+            </div>
+            <div class="flex items-center">
+                <button class="text-gray-500">{"-"}</button>
+                <input type="text" value={quantity.to_string()} class="w-8 ext-center" readonly={true}/>
+                <button class="text-gray-500">{"+"}</button>
+            </div>
+            <p class="text-sm font-semibold m1-2">{format!("${price}")}</p>
+        </div>
+    }
+}
