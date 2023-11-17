@@ -15,7 +15,6 @@ diesel::table! {
         name -> Text,
         street -> Text,
         zipcode -> Integer,
-        total -> Integer,
         fulfilled -> Bool,
     }
 }

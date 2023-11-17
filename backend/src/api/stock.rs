@@ -19,17 +19,21 @@ use crate::{
     DbPool, ENV,
 };
 
-#[get("/stock/get_single/{item_id}")]
-pub async fn get_item(item_id: Path<i32>, pool: web::Data<DbPool>) -> ShopResult<web::Json<Item>> {
-    let item_id = item_id.into_inner();
-    let item: Item = web::block(move || -> ShopResult<Item> {
-        let mut conn = pool.get()?;
+pub async fn item_from_db(item_id: i32, pool: &web::Data<DbPool>) -> ShopResult<Item> {
+    let mut conn = pool.get().unwrap();
+    web::block(move || -> ShopResult<Item> {
         Ok(stock::table
             .filter(id.eq(item_id))
             .select(Item::as_select())
             .get_result(&mut conn)?)
     })
-    .await??;
+    .await?
+}
+
+#[get("/stock/get_single/{item_id}")]
+pub async fn get_item(item_id: Path<i32>, pool: web::Data<DbPool>) -> ShopResult<web::Json<Item>> {
+    let item_id = item_id.into_inner();
+    let item: Item = item_from_db(item_id, &pool).await?;
 
     Ok(web::Json(item))
 }
@@ -103,7 +107,7 @@ pub async fn update_item(
             title: &title,
             kind: &kind,
             description: &description,
-            quantity: quantity,
+            quantity,
         };
 
         let mut conn = pool.get()?;
@@ -111,7 +115,7 @@ pub async fn update_item(
             .filter(id.eq(item_id))
             .set(new_item)
             .execute(&mut conn)
-            .and_then(|_| Ok(()))?)
+            .map(|_| ())?)
     })
     .await??;
 

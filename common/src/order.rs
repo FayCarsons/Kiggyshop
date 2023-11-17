@@ -1,7 +1,30 @@
+use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "backend")]
 use diesel::prelude::*;
+
+use crate::{item::Item, CartMap, StockMap};
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CheckoutCart {
+    pub inner: HashMap<Item, u32>,
+}
+
+impl CheckoutCart {
+    pub fn from_ctx(stock: &StockMap, cart: &CartMap) -> Self {
+        let res = cart
+            .iter()
+            .map(|(id, qty)| {
+                let item = stock.get(id).unwrap();
+
+                (item.clone(), *qty)
+            })
+            .collect::<HashMap<Item, u32>>();
+
+        Self { inner: res }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct JsonOrder {
@@ -12,7 +35,7 @@ pub struct JsonOrder {
     pub fulfilled: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "backend", derive(Queryable, Selectable, Identifiable), diesel(table_name = crate::schema::orders), diesel(check_for_backend(diesel::sqlite::Sqlite)))]
 pub struct Order {
     #[cfg(feature = "backend")]
@@ -20,7 +43,6 @@ pub struct Order {
     pub name: String,
     pub street: String,
     pub zipcode: i32,
-    pub total: i32,
     pub fulfilled: bool,
 }
 
@@ -35,7 +57,7 @@ pub struct NewOrder<'a> {
     pub fulfilled: bool,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Clone, Copy, Debug)]
 pub enum OrderFilter {
     All,
     Fulfilled,

@@ -1,5 +1,5 @@
 use crate::{
-    components::{cart::CartDropdown, error::Error, footer::Footer},
+    components::{dropdown::CartDropdown, error::Error, footer::Footer},
     context::AppAction,
     hooks::use_stock,
     Context, Route,
@@ -52,24 +52,23 @@ pub fn gallery() -> HtmlResult {
     };
 
     Ok(html! {
-        <div class="flex w-full h-full">
-                <div class="fixed flex-none left-0 ml-0 min-w-64 h-full hidden md:block">
+        <div class="relative flex bg-slate-50">
+                <div class="bg-kiggygreen hidden md:flex md:flex-col items-start top-0 left-0">
                     <CartDropdown onclick={None::<Callback<MouseEvent>>}/>
+                </div>
+                <div label="main-content" class="flex-1 max-w-full">
+                    <Header show_cart={*show_cart} onclick={set_cart.clone()}/>
+                    <div label="product-gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                        {items}
+                    </div>
+                    if ! *show_cart {<Footer/>}
                 </div>
 
                 if *show_cart {
-                    <div class="fixed flex-none block min-w-64 h-full">
-                        <CartDropdown onclick={set_cart.clone()}/>
+                    <div class="bg-kiggygreen flex flex-col items-end top-0 right-0 md:hidden">
+                        <CartDropdown onclick={set_cart}/>
                     </div>
                 }
-
-                <div class="flex-auto max-w-full bg-slate-50">
-                    <Header onclick={set_cart}/>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                        {items}
-                    </div>
-                    <Footer/>
-                </div>
         </div>
     })
 }

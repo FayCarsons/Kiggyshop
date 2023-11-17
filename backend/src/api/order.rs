@@ -1,67 +1,15 @@
-use std::collections::HashMap;
-
 use actix_web::{
-    post, put,
-    web::{self, Json, Path},
+    post,
+    web::{self, Path},
     HttpResponse,
 };
 use common::{
-    cart::NewCart,
-    item::Item,
-    order::{NewOrder, Order, OrderFilter},
-    schema::{
-        carts,
-        orders::{self, fulfilled},
-    },
+    order::{Order, OrderFilter},
+    schema::orders::{self, fulfilled},
 };
 use diesel::prelude::*;
 
 use crate::{error::ShopResult, DbPool};
-
-#[put("/order/put")]
-pub async fn new_order(
-    pool: web::Data<DbPool>,
-    order: web::Json<Order>,
-) -> ShopResult<HttpResponse> {
-    // STRIPE IMPLEMENTATION GOES HERE
-    // FOLLOWED BY EMAILS VA SMTP TO BOTH CUSTOMER && Kristen
-
-    web::block(move || -> ShopResult<()> {
-        let order = order.into_inner().clone();
-        let order = NewOrder {
-            name: &order.name,
-            street: &order.street,
-            zipcode: order.zipcode,
-            fulfilled: order.fulfilled,
-        };
-
-        let mut conn = pool.get()?;
-
-        let inserted_id = diesel::insert_into(orders::table)
-            .values(&order)
-            .returning(orders::dsl::id)
-            .get_result::<i32>(&mut conn)?;
-        let new_carts = [
-            NewCart {
-                order_id: inserted_id,
-                item_name: "cat",
-                quantity: 420,
-            },
-            NewCart {
-                order_id: inserted_id,
-                item_name: "bunny",
-                quantity: 69,
-            },
-        ];
-        diesel::insert_into(carts::table)
-            .values(&new_carts)
-            .execute(&mut conn)?;
-        Ok(())
-    })
-    .await??;
-
-    Ok(HttpResponse::Ok().finish())
-}
 
 #[post("/orders/get/{filter}")]
 pub async fn get_orders(
@@ -92,11 +40,4 @@ pub async fn get_orders(
 
     let json = serde_json::to_string(&orders)?;
     Ok(HttpResponse::Ok().content_type("text/json").body(json))
-}
-
-#[post("/order/total")]
-pub async fn calc_total(cart: Json<HashMap<Item, u32>>) -> ShopResult<HttpResponse> {
-    let total: i64 = cart.iter().map(|(k, v)| k.price() * *v as i64).sum();
-
-    Ok(HttpResponse::Ok().body(total.to_string()))
 }

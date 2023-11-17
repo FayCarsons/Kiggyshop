@@ -1,11 +1,13 @@
 pub use yew::prelude::*;
-pub mod cart;
+pub mod cart_page;
+pub mod completed;
+pub mod dropdown;
 pub mod error;
 pub mod footer;
 pub mod gallery;
 pub mod header;
+pub mod links;
 pub mod product;
 pub mod product_card;
-pub mod raw_html;
 pub mod suspense;
 pub mod svg;

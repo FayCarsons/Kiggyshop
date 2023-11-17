@@ -1,15 +1,14 @@
+use std::rc::Rc;
+
 use crate::{
     error::{FEResult, FrontendError},
     utils::get_document,
 };
 use common::{from_str, item::Item, log_debug, to_string, CartMap, StockMap};
-use gloo::console::log;
 use serde::{Deserialize, Serialize};
 use yew::{Properties, Reducible};
 
-use web_sys::HtmlDocument;
-
-#[derive(Properties, PartialEq, Clone, Debug)]
+#[derive(Properties, PartialEq, Clone, Debug, Default)]
 pub struct AppState {
     pub cart: Cart,
     pub stock: Option<StockMap>,
@@ -17,19 +16,19 @@ pub struct AppState {
 
 pub enum AppAction {
     LoadStock(StockMap),
-    UpdateCart(CartAction),
+    UpdateCart(Rc<CartAction>),
 }
 
 impl AppState {
-    pub fn update_cart(&self, action: CartAction) -> FEResult<Self> {
+    pub fn update_cart(&self, action: Rc<CartAction>) -> FEResult<Self> {
         let mut cpy = self.cart.items.clone();
 
-        match action {
-            CartAction::AddItem(item) => {
-                *cpy.entry(item).or_default() += 1;
+        match *action {
+            CartAction::AddItem(id) | CartAction::IncItem(id) => {
+                *cpy.entry(id).or_default() += 1;
             }
-            CartAction::RemoveItem(item) => {
-                cpy.remove_entry(&item);
+            CartAction::RemoveItem(id) => {
+                cpy.remove_entry(&id);
             }
             CartAction::DecItem(item) => {
                 if let Some(count) = cpy.get(&item) {
@@ -47,8 +46,8 @@ impl AppState {
         })
     }
 
-    pub fn get_item(&self, id: i32) -> Option<&Item> {
-        self.stock.as_ref().and_then(|stock| stock.get(&id))
+    pub fn get_item(&self, id: &i32) -> Option<&Item> {
+        self.stock.as_ref().and_then(|stock| stock.get(id))
     }
 
     pub fn get_total(&self) -> f64 {
@@ -88,15 +87,6 @@ impl Reducible for AppState {
     }
 }
 
-impl Default for AppState {
-    fn default() -> Self {
-        AppState {
-            stock: None,
-            cart: Cart::default()
-        }
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, Properties)]
 pub struct Cart {
     pub items: CartMap,
@@ -110,9 +100,11 @@ impl PartialEq for Cart {
     }
 }
 
+#[derive(Clone)]
 pub enum CartAction {
     AddItem(i32),
     RemoveItem(i32),
+    IncItem(i32),
     DecItem(i32),
 }
 
@@ -124,7 +116,7 @@ impl Cart {
     }
 
     pub fn count(&self) -> u32 {
-        self.items.values().into_iter().sum()
+        self.items.values().sum()
     }
 
     pub fn set_cookie(&self) -> Result<(), FrontendError> {
@@ -157,7 +149,7 @@ impl Cart {
                     log_debug!("Substring: {}", s);
                     let deser = from_str::<Cart>(s);
                     if let Ok(cart) = deser {
-                        let mut cart = Cart::from(cart);
+                        let mut cart = cart;
                         cart.items.shrink_to_fit();
                         Some(cart)
                     } else {
@@ -171,6 +163,14 @@ impl Cart {
             }
             _ => None,
         }
+    }
+
+    pub fn delete() -> FEResult<()> {
+        let document = get_document()?;
+
+        document.set_cookie("")?;
+
+        Ok(())
     }
 }
 

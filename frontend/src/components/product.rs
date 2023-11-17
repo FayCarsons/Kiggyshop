@@ -1,16 +1,16 @@
-use common::{from_str, item::Item, StockMap};
+use common::item::Item;
 use yew::{
-    function_component, html, platform::spawn_local, suspense::SuspensionResult, use_context,
-    use_state, Callback, Html, HtmlResult, MouseEvent, Properties, Suspense,
+    function_component, html, use_context, use_state, Callback, Html, HtmlResult, MouseEvent,
+    Properties, Suspense,
 };
 
 use crate::{
     components::{
-        cart::CartDropdown, error::Error, footer::Footer, header::Header, suspense::Loading,
+        dropdown::CartDropdown, error::Error, footer::Footer, header::Header, suspense::Loading,
     },
     context::{AppAction, CartAction},
-    hooks::use_item,
-    utils::{fetch, get_quantity_element, kind_to_price_category, title_to_path},
+    hooks::use_stock,
+    utils::{get_quantity_element, kind_to_price, title_to_path},
     Context,
 };
 
@@ -25,7 +25,7 @@ pub fn product_page(props: &ProductPageProps) -> Html {
 
     let fallback = html! {<Loading/>};
 
-    let child = if ctx.stock.is_none() || !ctx.stock.as_ref().unwrap().contains_key(&props.id) {
+    let child = if ctx.stock.is_none() {
         html! {
             <Suspense {fallback}>
                 <SuspendProduct id={props.id}/>
@@ -44,31 +44,51 @@ pub fn product_page(props: &ProductPageProps) -> Html {
     };
 
     html! {
-        <div class="flex flex-col min-h-screen">
-            <div class="hidden lg:block">
+        <div class="relative flex min-h-screen bg-slate-50">
+            <div class="bg-kiggygreen hidden md:flex flex-col items-start top-0 left-0">
                 <CartDropdown onclick={None::<Callback<MouseEvent>>}/>
             </div>
-            <Header onclick={set_cart.clone()}/>
-            {child}
-            <Footer/>
-            if *show_cart {<CartDropdown onclick={Some(set_cart)}/>}
+            <div class="flex flex-col min-h-screen">
+                <Header show_cart={*show_cart} onclick={set_cart.clone()}/>
+                {child}
+                if ! *show_cart {<Footer/>}
+            </div>
+
+            if *show_cart {
+                <div class="bg-kiggygreen flex flex-col items-end top-0 right-0s md:hidden">
+                    <CartDropdown onclick={set_cart}/>
+                </div>
+            }
         </div>
     }
 }
 
+/*
+
+*/
+
 #[function_component(SuspendProduct)]
 pub fn suspended_item(props: &ProductPageProps) -> HtmlResult {
     let ctx = use_context::<Context>().unwrap();
-    let item = use_item(&props.id)?;
+    let stock = use_stock()?;
 
-    if item.is_err() {
-        return Ok(html! {<Error/>});
-    }
+    let err_case = html! {<Error/>};
+
+    let item = if let Ok(ref stock) = stock {
+        ctx.dispatch(AppAction::LoadStock(stock.clone()));
+        if let Some(item) = stock.get(&props.id) {
+            item
+        } else {
+            return Ok(err_case);
+        }
+    } else {
+        return Ok(err_case);
+    };
 
     let onclick = get_onclick(ctx, props.id);
 
     Ok(html! {
-        <Product item={item.unwrap()} {onclick}/>
+        <Product item={item.clone()} {onclick}/>
     })
 }
 
@@ -76,7 +96,7 @@ pub fn suspended_item(props: &ProductPageProps) -> HtmlResult {
 pub fn sync_product(props: &ProductPageProps) -> Html {
     let ctx = use_context::<Context>().unwrap();
 
-    let item = ctx.get_item(props.id).unwrap();
+    let item = ctx.get_item(&props.id).unwrap();
     let onclick = get_onclick(ctx.clone(), props.id);
 
     html! {<Product item={item.clone()} {onclick}/>}
@@ -98,19 +118,19 @@ pub fn product(ProductProps { item, onclick }: &ProductProps) -> Html {
         ..
     } = item;
 
-    let (price, _) = kind_to_price_category(kind);
+    let price = kind_to_price(kind);
 
     html! {
         <div class="flex flex-col items-center md:flex-row md:justify-center" >
             <div class="md:w-1/2 p-4 flex flex-col items-center justify-center">
-                <img src={title_to_path(&title)} alt={title.clone()} class="w-full h-auto object-cover lg"/>
+                <img src={title_to_path(title)} alt={title.clone()} class="w-full h-auto object-cover lg"/>
             </div>
             <div class="md:w-1/2 p-4 text-center md:text-left">
                 <h1 class="text-3xl font-semibold mb-2">{title}</h1>
                 <p class="text-gray-700 mb-4">{description}</p>
-                <div class="flex items-center justify-center mb-4">
-                    <span class="text-lg font-semibold text-gray-900 mr-2">{format!("${price}")}</span>
-                    {get_quantity_element(&quantity)}
+                <div class="flex items-center justify-center md:items-start md:justify-start mb-4">
+                    <span class="text-lg font-semibold text-gray-900 mr-2 md:left-0">{format!("${price}")}</span>
+                    {get_quantity_element(quantity)}
                 </div>
                 <button
                     class="bg-gradient-to-l from-yellow-300 to-kiggypink
@@ -128,6 +148,6 @@ pub fn product(ProductProps { item, onclick }: &ProductProps) -> Html {
 fn get_onclick(ctx: Context, item_id: i32) -> Callback<MouseEvent> {
     let ctx = ctx.clone();
     Callback::from(move |_: MouseEvent| {
-        ctx.dispatch(AppAction::UpdateCart(CartAction::AddItem(item_id)))
+        ctx.dispatch(AppAction::UpdateCart(CartAction::AddItem(item_id).into()))
     })
 }

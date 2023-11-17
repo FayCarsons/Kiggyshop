@@ -1,7 +1,7 @@
 use common::item::Item;
 use yew::{function_component, html, Callback, Html, Properties};
 
-use crate::utils::{get_quantity_element, kind_to_price_category, title_to_path};
+use crate::utils::{get_quantity_element, kind_to_price, title_to_path};
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct CardProps {
@@ -18,7 +18,7 @@ pub fn product_card(props: &CardProps) -> Html {
         ..
     } = props.product.clone();
 
-    let (price, _) = kind_to_price_category(&kind);
+    let price = kind_to_price(&kind);
 
     let onclick = {
         let props = props.clone();

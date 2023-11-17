@@ -18,25 +18,22 @@ struct Password {
     password: String,
 }
 
-fn get_session(session: Session) -> ShopResult<bool> {
+fn get_session(session: &Session) -> ShopResult<bool> {
     match session.get::<bool>("admin-access") {
-        Ok(msg) => match msg {
-            Some(access) => Ok(access),
-            None => Ok(false),
-        },
+        Ok(msg) => msg.map_or(Ok(false), |access| Ok(access)),
         Err(e) => Err(BackendError::ContentNotFound(e.to_string())),
     }
 }
 
 fn set_session(session: Session) -> ShopResult<()> {
     match session.insert("admin-access", true) {
-        Ok(_) => Ok(()),
+        x @ Ok(()) => x.map_err(|_| BackendError::Unauthorized),
         _ => Err(BackendError::Unauthorized),
     }
 }
 
 fn is_valid_password(pass: &str) -> bool {
-    pass == &ENV.get().cloned().unwrap_or_default().admin_pass
+    pass == ENV.get().cloned().unwrap_or_default().admin_pass
 }
 
 #[get("")]
@@ -50,8 +47,6 @@ pub async fn try_login(
     web::Form(form): web::Form<Password>,
     session: Session,
 ) -> ShopResult<Redirect> {
-    println!("{:?}", &form);
-
     if is_valid_password(&form.password) {
         set_session(session)?;
         Ok(Redirect::to("/admin/dashboard").permanent())
@@ -62,7 +57,7 @@ pub async fn try_login(
 
 #[get("/dashboard")]
 pub async fn get_dashboard(session: Session) -> ShopResult<Redirect> {
-    if !get_session(session)? {
+    if !get_session(&session)? {
         return Ok(Redirect::to("/admin").permanent());
     }
     Ok(Redirect::to("/admin/dashboard/auth").permanent())
@@ -70,7 +65,7 @@ pub async fn get_dashboard(session: Session) -> ShopResult<Redirect> {
 
 #[post("/dashboard")]
 pub async fn post_dashboard(session: Session) -> ShopResult<Redirect> {
-    if !get_session(session)? {
+    if !get_session(&session)? {
         return Ok(Redirect::to("/admin").permanent());
     }
     Ok(Redirect::to("/admin/dashboard/auth").permanent())

@@ -61,7 +61,13 @@ impl From<ErrorType> for String {
 
 impl fmt::Display for ErrorType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        let msg = match self {
+            Self::DeserializationError => "Deserialization error: ",
+            Self::JsError => "Error in JS runtime: ",
+            Self::RequestError => "Error in request: ",
+            Self::SerializationError => "Serialization error: ",
+        };
+        write!(f, "{msg}")
     }
 }
 

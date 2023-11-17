@@ -1,13 +1,8 @@
-use super::{item::Item, Order};
-use serde::{Deserialize, Serialize};
+#![allow(unused_imports)]
+use super::Order;
 
 #[cfg(feature = "backend")]
 use diesel::prelude::*;
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Cart {
-    pub inner: hashbrown::HashMap<Item, u64>,
-}
 
 #[rustfmt::skip]
 #[cfg_attr(feature = "backend", 
@@ -22,7 +17,7 @@ pub struct DbCart {
 }
 
 #[cfg(feature = "backend")]
-#[derive(Insertable)]
+#[derive(Insertable, Clone)]
 #[diesel(table_name = crate::schema::carts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewCart<'a> {

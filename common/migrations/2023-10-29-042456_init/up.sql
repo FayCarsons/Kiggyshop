@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS orders (
     name TEXT NOT NULL, 
     street TEXT NOT NULL,
     zipcode INTEGER NOT NULL,
-    total INTEGER NOT NULL,
     fulfilled BOOLEAN NOT NULL
 );
 

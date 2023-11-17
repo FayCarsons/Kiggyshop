@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use yew::{AttrValue, Html, Properties};
 
 #[cfg(feature = "backend")]
 use diesel::prelude::*;
@@ -12,8 +11,7 @@ pub struct InputItem {
     pub quantity: i32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
-#[cfg_attr(feature = "frontend", derive(Properties))]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[rustfmt::skip]
 #[cfg_attr(feature = "backend", 
   derive(Queryable, Selectable), 
@@ -28,24 +26,13 @@ pub struct Item {
 }
 
 impl Item {
+    #[must_use]
     pub fn price(&self) -> i64 {
         match self.kind.as_str() {
             "SmallPrint" => 7,
             "BigPrint" => 20,
             "Button" => 3,
             _ => 0,
-        }
-    }
-}
-
-impl Default for Item {
-    fn default() -> Self {
-        Item {
-            id: Default::default(),
-            title: Default::default(),
-            kind: Default::default(),
-            description: Default::default(),
-            quantity: Default::default(),
         }
     }
 }

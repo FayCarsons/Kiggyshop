@@ -9,7 +9,7 @@ use stripe::StripeError;
 
 pub type ShopResult<T> = Result<T, BackendError>;
 
-#[derive(Clone, PartialEq, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum BackendError {
     ContentNotFound(String),
     EnvError(String),

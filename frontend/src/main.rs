@@ -7,17 +7,8 @@ pub mod utils;
 use context::{AppState, Cart};
 
 use common::HashMap;
-use components::{
-    cart::{CartDropdown, CartPage},
-    error::Error,
-    footer::Footer,
-    gallery::Gallery,
-    header::Header,
-    product::ProductPage,
-    suspense::Loading,
-};
+use components::{cart_page::CartPage, gallery::Gallery, product::ProductPage, suspense::Loading};
 use gloo::console::log;
-use utils::make_colors;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -72,16 +63,12 @@ fn main() {
 }
 
 fn switch(routes: Route) -> Html {
-    let onclick = Callback::from(|_: MouseEvent| {});
-
     match routes {
-        Route::Cart => html! {
-            <Error/>
-        },
         Route::Gallery => html! {<Gallery/>},
         Route::Product { id } => html! {
             <ProductPage {id}/>
         },
+        Route::Cart => html! {<CartPage/>},
         Route::NotFound => html! {<h1>{"four owo four: not fownd :/"}</h1>},
     }
 }

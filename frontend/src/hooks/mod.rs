@@ -1,5 +1,5 @@
 use crate::error::{FEResult, FrontendError};
-use common::{from_str, item::Item, log_debug, StockMap};
+use common::{from_str, log_debug, StockMap};
 use gloo::net::http::Request;
 use yew::{
     hook,
@@ -18,25 +18,6 @@ pub fn use_stock() -> SuspensionResult<FEResult<StockMap>> {
 
     match &(*res) {
         Ok(stock) => Ok(Ok(stock.clone())),
-        Err(_) => Err(Suspension::new().0),
-    }
-}
-
-#[hook]
-pub fn use_item(item_id: &i32) -> SuspensionResult<FEResult<Item>> {
-    let res = use_future(move || {
-        let item_id = item_id.clone();
-        async move {
-            let url = format!("/api/stock/get_single/{item_id}");
-            let req = Request::get(&url).send().await?.text().await?;
-            let item = from_str::<Item>(&req)?;
-
-            Ok::<Item, FrontendError>(item)
-        }
-    })?;
-
-    match &(*res) {
-        Ok(item) => Ok(Ok(item.clone())),
         Err(_) => Err(Suspension::new().0),
     }
 }

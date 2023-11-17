@@ -1,20 +1,25 @@
 use super::error::{ErrorType, FEResult, FrontendError};
 
-use gloo::{console::log, net::http::Request};
 use web_sys::HtmlDocument;
-use yew::{function_component, html, AttrValue, Html, Properties};
+use yew::{html, AttrValue, Html};
 
 pub type Color = [u8; 3];
 
 pub const PINK: Color = [255, 142, 173];
 pub const RED: Color = [228, 67, 66];
 pub const GREEN: Color = [125, 122, 25];
+pub const WHITE: Color = [255, 255, 255];
+pub const BLACK: Color = [0, 0, 0];
+pub const YELLOW: Color = [255, 241, 118];
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Palette {
     Pink,
     Red,
     Green,
+    White,
+    Black,
+    Yellow,
 }
 
 impl Palette {
@@ -23,6 +28,9 @@ impl Palette {
             Self::Pink => PINK,
             Self::Red => RED,
             Self::Green => GREEN,
+            Self::White => WHITE,
+            Self::Black => BLACK,
+            Self::Yellow => YELLOW,
         }
     }
 
@@ -35,6 +43,9 @@ impl Palette {
             Self::Pink => "kiggypink",
             Self::Red => "kiggyred",
             Self::Green => "kiggygreen",
+            Self::White => "white",
+            Self::Black => "black",
+            Self::Yellow => "yellow-300",
         }
         .into()
     }
@@ -45,28 +56,19 @@ pub fn tailwind_color(color: Color) -> AttrValue {
     format!("#{r:X}{g:X}{b:X}").to_lowercase().into()
 }
 
-pub fn make_colors() {
-    [PINK, RED, GREEN]
-        .iter()
-        .zip(["kiggypink", "kiggyred", "kiggygreen"])
-        .for_each(|(val, name)| {
-            let s = format!("{name}: {}", tailwind_color(*val));
-            log!(s)
-        })
-}
-
 pub fn title_to_path(title: &str) -> AttrValue {
-    let title = title.replace(" ", "");
+    let title = title.replace(' ', "");
     format!("/api/resources/images/{title}.png").into()
 }
 
-pub fn kind_to_price_category(kind: &str) -> (f32, AttrValue) {
+pub fn kind_to_price(kind: &str) -> AttrValue {
     let price = match kind {
         "SmallPrint" => 7.,
         "Button" => 3.,
         _ => 20.,
     };
-    (price, kind.to_owned().into())
+
+    price.to_string().into()
 }
 
 pub fn get_document() -> FEResult<HtmlDocument> {
@@ -88,15 +90,4 @@ pub fn get_quantity_element(quantity: &i32) -> Html {
         }
         _ => html! {<></>},
     }
-}
-
-pub async fn fetch(url: &str) -> String {
-    let resp = Request::get(url)
-        .send()
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap();
-    resp
 }

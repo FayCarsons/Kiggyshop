@@ -61,13 +61,38 @@ pub fn linkedin(
         onclick,
     }: &SvgProps,
 ) -> Html {
-    let children = html! {<><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-    <rect x="2" y="9" width="4" height="12"></rect>
-    <circle cx="4" cy="4" r="2"></circle></>};
+    let children = html! {
+    <>
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+        <rect x="2" y="9" width="4" height="12"/>
+        <circle cx="4" cy="4" r="2"/>
+    </>};
 
     html! {
         <SvgWrapper {children} {class} {alt} {onclick} fill={None} stroke={Some(color.clone())} {width} {height}/>
     }
+}
+
+#[function_component(Mail)]
+pub fn mail(
+    SvgProps {
+        class,
+        alt,
+        color,
+        width,
+        height,
+        onclick,
+    }: &SvgProps,
+) -> Html {
+    let children = html! {
+        <>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+        </>
+    };
+
+    html! {
+    <SvgWrapper {children} {class} {alt} {onclick} fill={None} stroke={Some(color.clone())} {width} {height}/>}
 }
 
 #[function_component(Burger)]
@@ -81,10 +106,14 @@ pub fn burger(
         onclick,
     }: &SvgProps,
 ) -> Html {
-    let children = html! {<><line x1="21" y1="10" x2="3" y2="10"></line>
-    <line x1="21" y1="6" x2="3" y2="6"></line>
-    <line x1="21" y1="14" x2="3" y2="14"></line>
-    <line x1="21" y1="18" x2="3" y2="18"></line></>};
+    let children = html! {
+        <>
+            <line x1="21" y1="10" x2="3" y2="10"></line>
+            <line x1="21" y1="6" x2="3" y2="6"></line>
+            <line x1="21" y1="14" x2="3" y2="14"></line>
+            <line x1="21" y1="18" x2="3" y2="18"></line>
+        </>
+    };
 
     html! {
         <SvgWrapper {children} {class} {alt} {onclick} fill={None} stroke={Some(color.clone())} {width} {height}/>
@@ -149,19 +178,19 @@ fn svg_wrapper(
         (&width.to_string().into(), &height.to_string().into());
 
     html! {
-        <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            onclick={if onclick.is_some() {onclick.clone().unwrap()} else {Callback::from(|_|{})}} 
-            {width} 
-            {height} 
-            viewBox={format!("0 0 {width} {height}")} 
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            onclick={if onclick.is_some() {onclick.clone().unwrap()} else {Callback::from(|_|{})}}
+            {width}
+            {height}
+            viewBox={format!("0 0 {width} {height}")}
             fill={fill}
-            stroke={stroke} 
-            stroke-width="2" 
-            stroke-linecap="round" 
+            stroke={stroke}
+            stroke-width="2"
+            stroke-linecap="round"
             stroke-linejoin="round"
-            {class} 
+            {class}
             {alt}>{children.clone()}
-        </svg>  
+        </svg>
     }
 }
