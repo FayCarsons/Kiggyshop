@@ -1,28 +1,29 @@
-use common::item::Item;
+use common::{item::FrontEndItem, ItemId};
 use yew::{function_component, html, Callback, Html, Properties};
 
 use crate::utils::{get_quantity_element, kind_to_price, title_to_path};
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct CardProps {
-    pub product: Item,
-    pub onclick: Callback<Item>,
+    pub product: FrontEndItem,
+    pub onclick: Callback<ItemId>,
 }
 
 #[function_component(ProductCard)]
 pub fn product_card(props: &CardProps) -> Html {
-    let Item {
+    let FrontEndItem {
+        id,
         title,
         kind,
-        quantity,
-        ..
+        description: _,
+        stock,
     } = props.product.clone();
 
     let price = kind_to_price(&kind);
 
     let onclick = {
         let props = props.clone();
-        move |_| props.clone().onclick.emit(props.clone().product)
+        move |_| props.clone().onclick.emit(id)
     };
 
     // Change from image darkening on hover to fade to white
@@ -32,7 +33,7 @@ pub fn product_card(props: &CardProps) -> Html {
             <img src={title_to_path(&title)} alt={title.clone()} class="w-full h-full object-cover transition duration-300 ease-in-out hover:scale-105" loading="lazy"/>
             <div class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-0 transition duration-300 opacity-0 hover:opacity-100 hover:bg-opacity-75" onclick={onclick}>
                 <h2 class="text-kiggypink text-4xl font-semibold mb-2 opacity-100">{title}</h2>
-                {get_quantity_element(&quantity)}
+                {get_quantity_element(&stock)}
                 <p class="text-kiggygreen text-2xl opacity-100">{format!("${price}")}</p>
             </div>
         </div>

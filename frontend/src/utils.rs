@@ -1,7 +1,15 @@
+use std::rc::Rc;
+
+use crate::context::Cart;
+
 use super::error::{ErrorType, FEResult, FrontendError};
 
-use web_sys::HtmlDocument;
-use yew::{html, AttrValue, Html};
+use common::{Quantity, to_string};
+use gloo::net::http::Request;
+use web_sys::{HtmlDocument, MouseEvent};
+use yew::{html, AttrValue, Html, platform::spawn_local};
+
+pub const SHIPPING_COST: f64 = 10.;
 
 pub type Color = [u8; 3];
 
@@ -82,12 +90,35 @@ pub fn get_document() -> FEResult<HtmlDocument> {
         })
 }
 
-pub fn get_quantity_element(quantity: &i32) -> Html {
+pub fn get_quantity_element(quantity: &Quantity) -> Html {
     match quantity {
-        0 => html! {<p class="text-kiggygreen mb-2">{"out of stock :/"}</p>},
+        0 => html! {<p class="text-kiggyred mb-2">{"out of stock :/"}</p>},
         1..=10 => {
-            html! {<p class="text-kiggygreen mb-2">{format!("only {quantity} available!")}</p>}
+            html! {<p class="text-kiggyred mb-2">{format!("only {quantity} left in stock!")}</p>}
         }
         _ => html! {<></>},
+    }
+}
+
+pub fn checkout(cart: Rc<Cart>) -> impl Fn(MouseEvent) {
+    move |_: MouseEvent| 
+    {
+        let cart = cart.clone();
+        spawn_local(async move {
+            let res = Request::post("/api/checkout")
+                .json(&cart.items)
+                .expect("CANNOT SERIALIZE CART")
+                .send()
+                .await
+                .expect("ERROR IN CHECKOUT REQUEST");
+            let stream = res
+                .text()
+                .await
+                .expect("EMPTY RESPONSE FROM CHECKOUT ENDPOINT");
+            let url = stream;
+            let window = web_sys::window().expect("CANNOT ACCESS WINDOW");
+            let location = window.location();
+            location.assign(&url).expect("CANNOT ASSIGN URL TO WINDOW");
+        });
     }
 }

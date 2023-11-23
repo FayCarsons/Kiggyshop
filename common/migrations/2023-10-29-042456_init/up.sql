@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS carts (
     id INTEGER PRIMARY KEY NOT NULL,
     order_id INTEGER NOT NULL,
-    item_name TEXT NOT NULL,
+    item_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
     FOREIGN KEY (order_id) REFERENCES orders(id)
 )

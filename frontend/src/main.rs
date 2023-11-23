@@ -4,9 +4,11 @@ pub mod error;
 pub mod hooks;
 pub mod utils;
 
+use std::rc::Rc;
+
 use context::{AppState, Cart};
 
-use common::HashMap;
+use common::{HashMap, ItemId};
 use components::{cart_page::CartPage, gallery::Gallery, product::ProductPage, suspense::Loading};
 use gloo::console::log;
 use yew::prelude::*;
@@ -19,9 +21,11 @@ pub enum Route {
     #[at("/")]
     Gallery,
     #[at("/product/:id")]
-    Product { id: i32 },
+    Product { id: ItemId },
     #[at("/cart")]
     Cart,
+    #[at("/about")]
+    About,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -37,6 +41,7 @@ fn app() -> Html {
                 items: HashMap::new(),
             }
         };
+        let cart = Rc::new(cart);
         AppState { cart, stock: None }
     });
 
@@ -69,6 +74,7 @@ fn switch(routes: Route) -> Html {
             <ProductPage {id}/>
         },
         Route::Cart => html! {<CartPage/>},
+        Route::About => html! {<h1>{"About Page"}</h1>},
         Route::NotFound => html! {<h1>{"four owo four: not fownd :/"}</h1>},
     }
 }

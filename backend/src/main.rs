@@ -6,6 +6,7 @@ mod api;
 mod env;
 mod error;
 mod stripe;
+mod utils;
 
 use actix_cors::Cors;
 use actix_session::{
@@ -14,8 +15,8 @@ use actix_session::{
     SessionMiddleware,
 };
 use admin::{
-    get_admin_dashboard, get_dashboard, get_style, login, post_admin_dashboard, post_dashboard,
-    try_login,
+    get_admin_dashboard, get_dashboard, get_js, get_style, login, post_admin_dashboard,
+    post_dashboard, try_login, upload_image,
 };
 use api::{
     order::get_orders,
@@ -97,7 +98,9 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(post_dashboard)
                     .service(get_admin_dashboard)
                     .service(post_admin_dashboard)
-                    .service(get_style),
+                    .service(get_style)
+                    .service(get_js)
+                    .service(upload_image),
             )
             .service(
                 web::scope("/api")
@@ -111,6 +114,7 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(webhook_handler)
                     .service(Files::new("/resources", "./resources").show_files_listing()),
             )
+            .service(webhook_handler)
     })
     .bind(BIND)?
     .run()

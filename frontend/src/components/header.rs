@@ -3,7 +3,7 @@ use crate::{components::svg::Burger, utils::Palette, Route};
 use gloo::console::log;
 use web_sys::MouseEvent;
 use yew::{function_component, html, Callback, Html, Properties};
-use yew_router::prelude::{use_location, use_navigator, Link};
+use yew_router::prelude::{use_location, Link};
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct HeaderProps {

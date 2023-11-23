@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::HashMap};
+use std::{borrow::Borrow, collections::HashMap, num::ParseIntError};
 
 use actix_web::{
     post,
@@ -8,9 +8,9 @@ use actix_web::{
 use common::{cart::NewCart, item::Item, order::NewOrder, CartMap};
 
 use stripe::{
-    CheckoutSessionItem, Client, CreatePaymentLink, CreatePaymentLinkAfterCompletion,
-    CreatePaymentLinkAfterCompletionRedirect, CreatePaymentLinkLineItems,
-    CreatePaymentLinkShippingAddressCollection,
+    Client, CreatePaymentLink,
+    CreatePaymentLinkAfterCompletion, CreatePaymentLinkAfterCompletionRedirect,
+    CreatePaymentLinkLineItems, CreatePaymentLinkShippingAddressCollection,
     CreatePaymentLinkShippingAddressCollectionAllowedCountries, CreatePaymentLinkShippingOptions,
     CreatePrice, CreateProduct, CreateShippingRate, CreateShippingRateDeliveryEstimate,
     CreateShippingRateDeliveryEstimateMaximum, CreateShippingRateDeliveryEstimateMaximumUnit,
@@ -20,8 +20,9 @@ use stripe::{
 };
 
 use crate::{
-    api::stock::item_from_db,
+    api::stock::{dec_items, item_from_db},
     error::{BackendError, ShopResult},
+    utils::print_red,
     DbPool, ENV,
 };
 
@@ -35,7 +36,7 @@ pub async fn checkout(cart: Json<CartMap>, pool: web::Data<DbPool>) -> ShopResul
 
     let env = ENV.get().unwrap();
 
-    let secret_key = env.stripe_secret_key.clone(); //"whsec_c9335e3acc0d0d41902e80bcd43289d05f6f7542e4f5688fbdfa150eb1642722";
+    let secret_key = env.stripe_secret_key.clone();
     let client = Client::new(secret_key);
 
     let mut metadata = HashMap::from([(String::from("async-stripe"), String::from("true"))]);
@@ -46,6 +47,7 @@ pub async fn checkout(cart: Json<CartMap>, pool: web::Data<DbPool>) -> ShopResul
     for (item, qty) in &item_map {
         let mut create_product = CreateProduct::new(&item.title);
         create_product.metadata = Some(metadata.clone());
+        create_product.description = Some(&item.description);
         let product = Product::create(&client, create_product).await?;
 
         let mut create_price = CreatePrice::new(Currency::USD);
@@ -73,7 +75,7 @@ pub async fn checkout(cart: Json<CartMap>, pool: web::Data<DbPool>) -> ShopResul
             }),
             display_name: "priority",
             fixed_amount: Some(CreateShippingRateFixedAmount {
-                amount: (7.25 * 100.) as i64,
+                amount: 1000,
                 currency: Currency::USD,
                 ..Default::default()
             }),
@@ -94,10 +96,11 @@ pub async fn checkout(cart: Json<CartMap>, pool: web::Data<DbPool>) -> ShopResul
                 .map(|(price, qty)| CreatePaymentLinkLineItems {
                     quantity: *qty,
                     price: price.id.to_string(),
-                    ..Default::default()
+                    adjustable_quantity: None
                 })
                 .collect::<Vec<_>>(),
         );
+        create_payment_link.metadata = Some(cart.iter().map(|(id, qty)| (id.to_string(), qty.to_string())).collect::<HashMap<String, String>>());
 
         create_payment_link.shipping_options = Some(vec![CreatePaymentLinkShippingOptions {
             shipping_rate: Some(shipping.id.to_string()),
@@ -125,23 +128,29 @@ pub async fn checkout(cart: Json<CartMap>, pool: web::Data<DbPool>) -> ShopResul
     Ok(HttpResponse::Ok().body(payment_link.url))
 }
 
-#[post("stripe_webhooks")]
+/// Receives (all) webhooks
+#[post("/stripe_webhooks")]
 pub async fn webhook_handler(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
 ) -> HttpResponse {
-    println!("INSERTING SHIT INTO MY DATABASE VIA STRIPE WEBHOOKS");
+    println!("INSERTING INTO DATABASE VIA STRIPE WEBHOOKS");
 
-    Box::pin(handle_webhook(req, payload, pool)).await.unwrap();
-    HttpResponse::Ok().finish()
+    match parse_webhook(req, payload, pool).await {
+        Ok(()) => HttpResponse::Ok().finish(),
+        Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
+    }
 }
 
-pub async fn handle_webhook(
+/// Determines whether webhook is correct type, IE is a completed checkout session
+pub async fn parse_webhook(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
 ) -> ShopResult<()> {
+    print_red("", "CURRENTLY IN 'handle_webhook'");
+
     let secret = "whsec_c9335e3acc0d0d41902e80bcd43289d05f6f7542e4f5688fbdfa150eb1642722";
 
     let payload_str = std::str::from_utf8(payload.borrow())
@@ -149,18 +158,24 @@ pub async fn handle_webhook(
 
     let stripe_sig = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
 
-    let event = Webhook::construct_event(payload_str, stripe_sig, secret)
-        .map_err(|e| BackendError::PaymentError(e.to_string()))?;
-
-    if let (EventType::CheckoutSessionCompleted, EventObject::CheckoutSession(session)) =
-        (event.type_, event.data.object)
-    {
-        handle_checkout(session, pool).await?;
+    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, secret) {
+        if let EventType::CheckoutSessionCompleted = event.type_ {
+            if let EventObject::CheckoutSession(session) = event.data.object {
+                handle_checkout(session, pool).await?;
+            }
+        }
+    } else {
+        print_red(
+            "",
+            "FAILED TO CONSTRUCT WEBHOOK EVENT, MAYHAPS UR KEY IS WRONG",
+        );
     }
 
     Ok(())
 }
 
+/// Takes data from completed checkout session, stores it in DB and updates stock
+/// PLEASE BREAK INTO SMALLER FNs
 async fn handle_checkout(
     session: stripe::CheckoutSession,
     pool: web::Data<DbPool>,
@@ -178,11 +193,23 @@ async fn handle_checkout(
     let zipcode = address.postal_code.unwrap().parse::<i32>().unwrap();
     let name = name.unwrap();
 
+    // Collecting user cart from session metadata
+    let cart = session.metadata.unwrap();
+    print_red("CART FROM METADTA: ", &cart);
+    let cart = cart.iter().map(|(id, qty)| {
+        let id = str::parse::<i32>(id)?;
+        let qty = str::parse::<i32>(qty)?;
+        Ok((id, qty))
+    }).collect::<Result<Vec<(i32, i32)>, ParseIntError>>().map_err(|e| BackendError::PaymentError(e.to_string()))?;
+
+    let mut cart_conn = pool.get().unwrap();
+    let mut stock_conn = pool.get().unwrap();
+    let blocked_pairs = cart.clone();
+
+    print_red("", "ENTERING DB BLOCK!");
     web::block(move || -> ShopResult<()> {
         use common::schema::{carts, orders};
         use diesel::RunQueryDsl;
-
-        let mut conn = pool.get()?;
 
         let order = NewOrder {
             name: &name,
@@ -194,36 +221,28 @@ async fn handle_checkout(
         let inserted_id = diesel::insert_into(orders::table)
             .values(&order)
             .returning(orders::dsl::id)
-            .get_result::<i32>(&mut conn)?;
+            .get_result::<i32>(&mut cart_conn)?;
 
-        let new_carts = {
-            let mut carts = Vec::<NewCart>::new();
-
-            for item in &session.line_items.data {
-                let CheckoutSessionItem {
-                    description,
-                    quantity,
-                    ..
-                } = item;
-
-                let res = NewCart {
-                    order_id: inserted_id,
-                    item_name: description,
-                    quantity: quantity.unwrap_or_default() as i32,
-                };
-
-                carts.push(res.clone());
-            }
-
-            carts
-        };
+        let new_carts = blocked_pairs
+            .into_iter()
+            .map(|(item_id, quantity)| NewCart {
+                order_id: inserted_id,
+                item_id,
+                quantity,
+            })
+            .collect::<Vec<NewCart>>();
 
         diesel::insert_into(carts::table)
             .values(&new_carts)
-            .execute(&mut conn)?;
+            .execute(&mut cart_conn)?;
         Ok(())
     })
-    .await??;
+    .await.expect("CRASHED WHILE INSERTING ORDER INTO DB").expect("CRASHED WHILE INSERTING ORDER INTO DB");
+
+    print_red("", "UPDATING STOCK W/ ORDER");
+    dec_items(cart, stock_conn).await?;
+
+    print_red("", "WEBHOOK COMPLETED");
 
     Ok(())
 }

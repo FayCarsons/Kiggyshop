@@ -1,14 +1,15 @@
 use std::rc::Rc;
 
-use common::item::Item;
+use common::item::FrontEndItem;
+use gloo::net::http::Request;
 use web_sys::MouseEvent;
-use yew::{function_component, html, use_context, Callback, Html};
-use yew_router::prelude::Link;
+use yew::{function_component, html, platform::spawn_local, use_context, Callback, Html};
+use yew_router::prelude::use_navigator;
 
 use crate::{
-    components::{error::Error, header::Header},
+    components::error::Error,
     context::{AppAction, CartAction},
-    utils::{kind_to_price, title_to_path},
+    utils::{get_quantity_element, kind_to_price, title_to_path, SHIPPING_COST, checkout},
     Context, Route,
 };
 
@@ -39,10 +40,9 @@ pub fn cart_page() -> Html {
         })
         .collect::<Html>();
 
-    let total = ctx.get_total() + 10.;
+    let total = ctx.get_total() + SHIPPING_COST;
 
-    let show_cart = false;
-    let onclick = |_: MouseEvent| {};
+    let checkout = checkout(ctx.cart.clone());
 
     html! {
         <div class="absolute min-h-screen top-0 right-0 left-0 min-w-screen bg-gradient-to-b from-kiggypink to-kiggyred">
@@ -62,7 +62,7 @@ pub fn cart_page() -> Html {
                             <p class="text-xl font-semibold">{format!("Total: ${total}")}</p>
                             <p class="text-gray-500 text-sm">{"shipping: $10"}</p>
                         </div>
-                        <button class="bg-kiggygreen text-white px-6 py-2 rounded-md hover:brightness-90">
+                        <button class="bg-kiggygreen text-white px-6 py-2 rounded-md hover:brightness-90" onclick={checkout}>
                             {"checkout"}
                         </button>
                     </div>
@@ -76,11 +76,11 @@ pub fn cart_page() -> Html {
 pub fn cart_page_item(CartItemProps { item, quantity }: &CartItemProps) -> Html {
     let ctx = use_context::<Context>().unwrap();
 
-    let Item {
+    let FrontEndItem {
         id,
         title,
         kind,
-        quantity: in_stock,
+        stock,
         ..
     } = item;
 
@@ -90,8 +90,16 @@ pub fn cart_page_item(CartItemProps { item, quantity }: &CartItemProps) -> Html 
         move |action: CartAction| {
             let ctx = ctx.clone();
             let action = Rc::new(action);
-            Callback::from(move |_: MouseEvent| ctx.dispatch(AppAction::UpdateCart(action.clone())))
+            move |_: MouseEvent| ctx.dispatch(AppAction::UpdateCart(action.clone()))
         }
+    };
+
+    let navigator = use_navigator().unwrap();
+
+    let product_callback = {
+        let id = *id;
+        let navigator = navigator.clone();
+        Callback::from(move |_: MouseEvent| navigator.push(&Route::Product { id }))
     };
 
     html! {
@@ -102,12 +110,13 @@ pub fn cart_page_item(CartItemProps { item, quantity }: &CartItemProps) -> Html 
                 class="w-16 h-16 object-cover rounded-md"
                 src={title_to_path(title)}
                 alt="Product"
+                onclick={product_callback.clone()}
               />
               <div>
-                <p class="text-gray-800 text-lg font-semibold">{title}</p>
+                <p class="text-gray-800 text-lg font-semibold" onclick={product_callback}>{title}</p>
                 <p class="text-gray-500">{format!("${price}")}</p>
                 /* Only x left in stock message */
-                if *in_stock < 10 {<p class="text-sm text-gray-500">{format!("Only {in_stock} left in stock")}</p>}
+                {get_quantity_element(stock)}
               </div>
             </div>
 

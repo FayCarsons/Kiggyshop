@@ -1,12 +1,14 @@
-use common::item::Item;
+use std::rc::Rc;
+
+use common::{item::FrontEndItem, ItemId};
 use yew::{
     function_component, html, use_context, use_state, Callback, Html, HtmlResult, MouseEvent,
-    Properties, Suspense,
+    Properties, Suspense, AttrValue,
 };
 
 use crate::{
     components::{
-        dropdown::CartDropdown, error::Error, footer::Footer, header::Header, suspense::Loading,
+        dropdown::{CartDropdown, BASE_DROPDOWN_CLASS}, error::Error, footer::Footer, header::Header, suspense::Loading,
     },
     context::{AppAction, CartAction},
     hooks::use_stock,
@@ -16,7 +18,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct ProductPageProps {
-    pub id: i32,
+    pub id: ItemId,
 }
 
 #[function_component(ProductPage)]
@@ -43,11 +45,11 @@ pub fn product_page(props: &ProductPageProps) -> Html {
         move |_| show_cart.set(!*show_cart)
     };
 
+    let left_dropdown_class = "min-h-screen top-0 p-4 w-0 md:w-52 transition-all duration-300 ease-in-out bg-kiggygreen hidden md:flex md:flex-col items-start top-0 left-0";
+
     html! {
         <div class="relative flex min-h-screen bg-slate-50">
-            <div class="bg-kiggygreen hidden md:flex flex-col items-start top-0 left-0">
-                <CartDropdown onclick={None::<Callback<MouseEvent>>}/>
-            </div>
+            <CartDropdown onclick={None::<Callback<MouseEvent>>} class={left_dropdown_class}/>
             <div class="flex flex-col min-h-screen">
                 <Header show_cart={*show_cart} onclick={set_cart.clone()}/>
                 {child}
@@ -55,9 +57,7 @@ pub fn product_page(props: &ProductPageProps) -> Html {
             </div>
 
             if *show_cart {
-                <div class="bg-kiggygreen flex flex-col items-end top-0 right-0s md:hidden">
-                    <CartDropdown onclick={set_cart}/>
-                </div>
+                <CartDropdown onclick={set_cart} class={"bg-kiggygreen flex flex-col items-end top-0 right-0s md:hidden"}/>
             }
         </div>
     }
@@ -74,9 +74,10 @@ pub fn suspended_item(props: &ProductPageProps) -> HtmlResult {
 
     let err_case = html! {<Error/>};
 
-    let item = if let Ok(ref stock) = stock {
+    let item = if let Ok(stock) = stock {
         ctx.dispatch(AppAction::LoadStock(stock.clone()));
-        if let Some(item) = stock.get(&props.id) {
+        let opt_item = stock.get(&props.id);
+        if let Some(item) = opt_item.cloned() {
             item
         } else {
             return Ok(err_case);
@@ -85,7 +86,7 @@ pub fn suspended_item(props: &ProductPageProps) -> HtmlResult {
         return Ok(err_case);
     };
 
-    let onclick = get_onclick(ctx, props.id);
+    let onclick = get_add_cart_callback(ctx, props.id);
 
     Ok(html! {
         <Product item={item.clone()} {onclick}/>
@@ -97,25 +98,25 @@ pub fn sync_product(props: &ProductPageProps) -> Html {
     let ctx = use_context::<Context>().unwrap();
 
     let item = ctx.get_item(&props.id).unwrap();
-    let onclick = get_onclick(ctx.clone(), props.id);
+    let onclick = get_add_cart_callback(ctx.clone(), props.id);
 
     html! {<Product item={item.clone()} {onclick}/>}
 }
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct ProductProps {
-    item: Item,
+    item: FrontEndItem,
     onclick: Callback<MouseEvent>,
 }
 
 #[function_component(Product)]
 pub fn product(ProductProps { item, onclick }: &ProductProps) -> Html {
-    let Item {
+    let FrontEndItem {
+        id: _,
         title,
         kind,
         description,
-        quantity,
-        ..
+        stock,
     } = item;
 
     let price = kind_to_price(kind);
@@ -128,11 +129,12 @@ pub fn product(ProductProps { item, onclick }: &ProductProps) -> Html {
             <div class="md:w-1/2 p-4 text-center md:text-left">
                 <h1 class="text-3xl font-semibold mb-2">{title}</h1>
                 <p class="text-gray-700 mb-4">{description}</p>
-                <div class="flex items-center justify-center md:items-start md:justify-start mb-4">
-                    <span class="text-lg font-semibold text-gray-900 mr-2 md:left-0">{format!("${price}")}</span>
-                    {get_quantity_element(quantity)}
+                <div class="flex flex-col items-center justify-center md:items-start md:justify-start mb-4">
+                    <p class="text-lg font-semibold text-gray-900 mr-2 md:left-0">{format!("${price}")}</p>
+                    {get_quantity_element(stock)}
                 </div>
-                <button
+                if *stock > 0 {
+                    <button
                     class="bg-gradient-to-l from-yellow-300 to-kiggypink
                             brightness-100 text-white py-2 px-4 md:px-6 
                             rounded transiition duration-300 ease-in-out 
@@ -140,12 +142,13 @@ pub fn product(ProductProps { item, onclick }: &ProductProps) -> Html {
                     {onclick}>
                     {"Add to cart"}
                 </button>
+                }
             </div>
         </div>
     }
 }
 
-fn get_onclick(ctx: Context, item_id: i32) -> Callback<MouseEvent> {
+fn get_add_cart_callback(ctx: Context, item_id: ItemId) -> Callback<MouseEvent> {
     let ctx = ctx.clone();
     Callback::from(move |_: MouseEvent| {
         ctx.dispatch(AppAction::UpdateCart(CartAction::AddItem(item_id).into()))

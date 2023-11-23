@@ -12,7 +12,7 @@ use diesel::prelude::*;
 pub struct DbCart {
     pub id: i32,
     pub order_id: i32,
-    pub item_name: String,
+    pub item_id: String,
     pub quantity: i32,
 }
 
@@ -20,8 +20,8 @@ pub struct DbCart {
 #[derive(Insertable, Clone)]
 #[diesel(table_name = crate::schema::carts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct NewCart<'a> {
+pub struct NewCart {
     pub order_id: i32,
-    pub item_name: &'a str,
+    pub item_id: i32,
     pub quantity: i32,
 }

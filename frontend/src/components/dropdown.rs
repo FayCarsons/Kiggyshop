@@ -1,34 +1,43 @@
 use std::rc::Rc;
 
-use common::item::Item;
-use gloo::net::http::Request;
+use common::{item::FrontEndItem, ItemId, Quantity};
 use web_sys::MouseEvent;
 use yew::{
-    function_component, html, platform::spawn_local, use_context, AttrValue, Callback, Html,
+    function_component, html, use_context, AttrValue, Callback, Html,
     Properties,
 };
 use yew_router::prelude::{use_navigator, Link};
 
 use crate::{
-    components::{error::Error, links::Links, svg::Burger},
+    components::{
+        error::Error,
+        links::{Links, LinksSize},
+        svg::Burger,
+    },
     context::{AppAction, CartAction},
-    utils::{kind_to_price, title_to_path, Palette},
+    utils::{kind_to_price, title_to_path, Palette, checkout},
     Context, Route,
 };
+
+pub const BASE_DROPDOWN_CLASS: &str = "";
+const DEFAULT_DROPDOWN_CLASS: &str = "w-52";
+
+// OLD CART-DROPDOWN
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct DropDownProps {
     pub onclick: Option<Callback<MouseEvent>>,
+    pub class: AttrValue
 }
 
 #[function_component(CartDropdown)]
-pub fn cart_dropdown(DropDownProps { onclick }: &DropDownProps) -> Html {
+pub fn cart_dropdown(DropDownProps { onclick , class}: &DropDownProps) -> Html {
     let ctx = use_context::<Context>().unwrap();
     let total = ctx.get_total();
 
     // Sort products by ID so they don't re-order on re-render
     // Can't find aa way to do this w/o allocating twice
-    let mut products: Vec<(i32, u32)> = ctx.cart.items.clone().into_iter().collect();
+    let mut products: Vec<(ItemId, Quantity)> = ctx.cart.items.clone().into_iter().collect();
     products.sort_by(|(a, _), (b, _)| a.partial_cmp(b).unwrap());
 
     let products = products
@@ -46,31 +55,10 @@ pub fn cart_dropdown(DropDownProps { onclick }: &DropDownProps) -> Html {
         })
         .collect::<Html>();
 
-    let checkout = {
-        let cart = ctx.cart.clone();
-        move |_: MouseEvent| {
-            let cart = cart.clone();
-            spawn_local(async move {
-                let res = Request::post("/api/checkout")
-                    .json(&cart.items)
-                    .expect("CANNOT SERIALIZE CART")
-                    .send()
-                    .await
-                    .expect("ERROR IN CHECKOUT REQUEST");
-                let stream = res
-                    .text()
-                    .await
-                    .expect("EMPTY RESPONSE FROM CHECKOUT ENDPOINT");
-                let url = stream;
-                let window = web_sys::window().expect("CANNOT ACCESS WINDOW");
-                let location = window.location();
-                location.assign(&url).expect("CANNOT ASSIGN URL TO WINDOW");
-            });
-        }
-    };
+    let checkout = checkout(ctx.cart.clone());
 
     html! {
-        <div class="min-h-screen w-52 top-0 p-4">
+        <div {class}>
             if onclick.is_some() {
                 <Burger
                     onclick={onclick.clone().unwrap_or_default()}
@@ -96,25 +84,25 @@ pub fn cart_dropdown(DropDownProps { onclick }: &DropDownProps) -> Html {
                 {"checkout"}
             </button>
 
-            <Links class="absolute bottom-0 md:left-0 mt-auto mx-auto space-x-2 p-2 flex justify-center items-center"/>
+            <Links size={LinksSize::Large} class="absolute bottom-0 md:left-0 mt-auto mx-auto space-x-2 p-2 flex justify-center items-center"/>
         </div>
     }
 }
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct CartItemProps {
-    pub item: Item,
-    pub quantity: u32,
+    pub item: FrontEndItem,
+    pub quantity: Quantity,
 }
 
 #[function_component(DropdownItem)]
 fn dropdown_item(CartItemProps { item, quantity }: &CartItemProps) -> Html {
-    let Item {
+    let FrontEndItem {
+        id,
         title,
         kind,
         description,
-        id,
-        ..
+        stock: _,
     } = item;
     let price = kind_to_price(kind);
 

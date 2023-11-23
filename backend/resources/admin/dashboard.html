@@ -8,13 +8,27 @@
   </head>
 
   <body>
+    <script>
+      const itemAction = {
+        edit: 1,
+        add: 2,
+        delete: 3,
+      };
+
+      const tabState = {
+        stock: 1,
+        orders: 2,
+        readOnly: true
+      };
+      
+    </script>
     <header>
       <h1>Dashboard</h1>
 
       <!-- Navigation Tabs -->
       <div>
-        <button onclick="showTab('stock')">Stock</button>
-        <button onclick="showTab('orders')">Orders</button>
+        <button onclick="show_tab(tabState.stock)">Stock</button>
+        <button onclick="show_tab(tabState.orders)">Orders</button>
       </div>
     </header>
 
@@ -36,8 +50,8 @@
           <!-- Stock items will be dynamically added here -->
         </tbody>
       </table>
-      <button onclick="deleteSelectedStock()">Delete Selected</button>
-      <button onclick="addItem()">Add Item</button>
+      <button onclick="delete_selected_stock()">Delete Selected</button>
+      <button onclick="show_item_modal('add', 0)">Add Item</button>
     </div>
 
     <!-- Orders Tab Content -->
@@ -67,308 +81,35 @@
       </table>
     </div>
 
-    <!-- Add stock -->
-    <div id="addStockModal" class="modal" style="display: none">
+    <!-- Item Modal -->
+    <div id="itemModal" class="modal" style="display: none">
       <div class="modal-content">
-        <span
-          class="close"
-          onclick="document.getElementById('addStockModal').style.display='none'"
-          >&times;</span
+        <span class="close" onclick="close_modal()">&times;</span>
+        <label for="title">Title:</label>
+        <input type="text" id="title" value="" required /><br />
+        <label for="kind">Kind:</label>
+        <select id="kind" value="BigPrint" required>
+          <option value="BigPrint">BigPrint</option>
+          <option value="SmallPrint">SmallPrint</option>
+          <option value="Button">Button</option>
+        </select>
+        <label for="description">Description:</label>
+        <input type="text" id="description" value="" required /><br />
+        <label for="quantity">Quantity:</label>
+        <input type="number" id="quantity" value="" required /><br />
+        <img id="image" src="" style="display: none" />
+        <form
+          id="imageForm"
+          action="/api/upload_image"
+          method="post"
+          enctype="multipart/form-data"
         >
-        <h2>Add Stock Item</h2>
-        <label for="newTitle">Title:</label>
-        <input type="text" id="newTitle" required />
-
-        <label for="newCategory">Category:</label>
-        <select type="text" id="newCategory" required>
-          <option value="BigPrint">Big Print</option>
-          <option value="SmallPrint">Small Print</option>
-          <option value="Button">Button</option>
-        </select>
-
-        <label for="newDescription">Description:</label>
-        <input type="text" id="newDescription" required />
-
-        <label for="newQuantity">Quantity:</label>
-        <input type="number" id="newQuantity" required />
-
-        <button id="addStockButton">Add Item</button>
+          <label for="imageInput">Upload Image:</label>
+          <input id="imageInput" type="file" accept=".png" />
+        </form>
+        <button id="submitItem">Save</button>
       </div>
     </div>
-
-    <!-- Edit Stock Modal -->
-    <div id="editStockModal" class="modal" style="display: none">
-      <div class="modal-content">
-        <span class="close" onclick="closeEditModal()">&times;</span>
-        <label for="editTitle">Title:</label>
-        <input type="text" id="editTitle" value="" required /><br />
-        <label for="editKind">Kind:</label>
-        <select id="editKind" value="BigPrint" required>
-          <option value="BigPrint">Big Print</option>
-          <option value="SmallPrint">Small Print</option>
-          <option value="Button">Button</option>
-        </select>
-        <label for="editDescription">Description:</label>
-        <input type="text" id="editDescription" value="" required /><br />
-        <label for="editQuantity">Quantity:</label>
-        <input type="number" id="editQuantity" value="" required /><br />
-        <button id="editStockButton" onclick="putItem">Save</button>
-      </div>
-    </div>
-
-    <!-- JavaScript to handle tab switching and actions -->
-    <script>
-      'use strict'
-      let stockIsShowing = false;
-      let ordersShowing = false;
-
-      const orderFilterDropDown = document.getElementById("orderFilter");
-      orderFilterDropDown.addEventListener("change", () => {
-        showOrders(orderFilterDropDown.value);
-      });
-
-      const showTab = async (tabName) => {
-        tabName = tabName.trim();
-
-        if (tabName === 'stock' && stockIsShowing || tabName === 'orders' && ordersShowing) {
-            return
-        }
-
-        var tabs = document.querySelectorAll('[id$="Tab"]');
-        for (var i = 0; i < tabs.length; i++) {
-          tabs[i].style.display = "none";
-        }
-
-        document.getElementById(`${tabName}Tab`).style.display = 'block';
-
-        if (tabName === "stock") {
-            stockIsShowing = true
-            ordersShowing = false
-            showStock();
-        } else if (tabName === "orders") {
-            stockIsShowing = false
-            ordersShowing = true
-            showOrders("All");
-        }
-      };
-
-      const showStock = async () => {
-        console.log("FETCHING STOCK")
-        try {
-          const res = await fetch("/api/stock/get", {
-            method: "GET",
-            headers: {
-              "Content-type": "application/json",
-            },
-          });
-
-          const stock = await res.json();
-
-          const stockList = document.getElementById("stockList");
-          stockList.innerHTML = "";
-
-          for (let [
-            key,
-            { id, title, kind, description, quantity },
-          ] of Object.entries(stock)) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                    <td><input type="checkbox" id="${id}"></td>
-                    <td>${title.toUpperCase()}</td>
-                    <td>${kind}</td>
-                    <td>${description}</td>
-                    <td>${quantity}</td>
-                    <td><button onclick="showStockModal(${id})">Edit</button></td>
-                    `;
-            stockList.appendChild(row);
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      };
-
-      const showOrders = async (filter) => {
-        filter = filter.trim();
-
-        try {
-          const res = await fetch(`/api/orders/get/${filter}`, {
-            method: "POST",
-            headers: {
-              "Content-type": "application/json",
-            },
-          });
-
-          if (!res.ok) throw new Error(`Cannot fetch order: ${res.statusText}`);
-
-          const orders = await res.json();
-
-          updateOrdersUI(orders);
-        } catch (err) {
-          console.error(err);
-        }
-      };
-
-      const updateOrdersUI = (orders) => {
-        const orderList = document.getElementById("orderList");
-        orderList.innerHTML = "";
-
-        orders.forEach((order) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-                    <td>${order.id}</td>
-                    <td>${order.name}</td>
-                    <td>${order.street}</td>
-                    <td>${order.zipcode}</td>
-                    <td>${order.fulfilled}</td>
-                `;
-          orderList.appendChild(row);
-        });
-      };
-
-      const deleteSelectedStock = async () => {
-        const checkboxes = document.querySelectorAll(
-          'input[type="checkbox"]:checked'
-        );
-        const stockIds = Array.from(checkboxes).map((item) =>
-          parseInt(item.id)
-        );
-
-        try {
-          const res = await fetch(`/api/stock/delete`, {
-            method: "DELETE",
-            headers: {
-              "Content-type": "application/json",
-            },
-            body: JSON.stringify(stockIds),
-          });
-
-          if (!res.ok) throw new Error(`failed to delete item ${itemId}`);
-          showStock();
-        } catch (err) {
-          alert("somfing went wong :/ \n", err);
-        }
-      };
-
-      const addItem = () => {
-        const modal = document.getElementById("addStockModal");
-        modal.style.display = "block";
-
-        const addButton = document.getElementById("addStockButton");
-        addButton.onclick = () => {
-          const newItem = {
-            title: document.getElementById("newTitle").value,
-            kind: document.getElementById("newCategory").value,
-            description: document.getElementById("newDescription").value,
-            quantity: parseInt(document.getElementById("newQuantity").value),
-          };
-
-          if (validateItem(newItem)) {
-            putItem(newItem);
-            modal.style.display = "none";
-          } else {
-            alert("Pwease dubbo check ur input, somefing was wong :P");
-          }
-        };
-      };
-
-      const putItem = async (newItem) => {
-        newItem.quantity = parseInt(newItem.quantity);
-
-        try {
-          let res = await fetch("/api/stock/add", {
-            method: "PUT",
-            headers: {
-              "Content-type": "application/json",
-            },
-            body: JSON.stringify(newItem),
-          });
-
-          if (!res.ok) {
-            throw new Error(`Failed to add new item: ${res.statusText}`);
-          }
-
-          showStock();
-        } catch (err) {
-          console.error(err);
-        }
-      };
-
-      const showStockModal = async (itemId) => {
-        try {
-          const response = await fetch(`/api/stock/get_single/${itemId}`, {
-            method: "GET",
-            headers: {
-              "Content-type": "application/json",
-            },
-          });
-
-          if (!response.ok) {
-            throw new Error(
-              `Failed to fetch stock item: ${response.statusText}`
-            );
-          }
-
-          const { title, kind, description, quantity } = await response.json();
-
-          const modal = document.getElementById("editStockModal");
-          modal.style.display = "block";
-
-          document.getElementById("editTitle").value = title;
-          document.getElementById("editKind").value = kind;
-          document.getElementById("editDescription").value = description;
-          document.getElementById("editQuantity").value = quantity;
-
-          const editButton = document.getElementById("editStockButton");
-          editButton.onclick = () => {
-            const editedItem = {
-              title: document.getElementById("editTitle").value,
-              kind: document.getElementById("editKind").value,
-              description: document.getElementById("editDescription").value,
-              quantity: document.getElementById("editQuantity").value,
-            };
-
-            if (validateItem(editedItem)) {
-              updateItem(itemId, editedItem);
-              modal.style.display = "none";
-            } else {
-              alert("Pwease dubbo check ur input, somefing was wrong :P");
-            }
-          };
-        } catch (err) {
-          console.error(err);
-        }
-      };
-
-      const updateItem = async (itemId, editedItem) => {
-        editedItem.quantity = parseInt(editedItem.quantity);
-
-        try {
-          const res = await fetch(`/api/stock/update/${itemId}`, {
-            method: "PUT",
-            headers: {
-              "Content-type": "application/json",
-            },
-            body: JSON.stringify(editedItem),
-          });
-
-          if (!res.ok) {
-            throw new Error(`failed to update stock item: ${res.statusText}`);
-          }
-
-          showStock();
-        } catch (err) {
-          console.error(err);
-        }
-      };
-
-      const closeEditModal = () => {
-        const modal = document.getElementById("editStockModal");
-        modal.style.display = "none";
-      };
-
-      const validateItem = ({ title, kind, description, quantity }) => {
-        return title && kind && description && quantity > 0;
-      };
-    </script>
+    <script defer src="/admin/dashboard/dashboard.js"></script>
   </body>
 </html>

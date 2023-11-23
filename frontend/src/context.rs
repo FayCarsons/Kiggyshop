@@ -4,18 +4,18 @@ use crate::{
     error::{FEResult, FrontendError},
     utils::get_document,
 };
-use common::{from_str, item::Item, log_debug, to_string, CartMap, StockMap};
+use common::{from_str, item::FrontEndItem, log_debug, to_string, CartMap, ItemId, StockMap};
 use serde::{Deserialize, Serialize};
 use yew::{Properties, Reducible};
 
 #[derive(Properties, PartialEq, Clone, Debug, Default)]
 pub struct AppState {
-    pub cart: Cart,
-    pub stock: Option<StockMap>,
+    pub cart: Rc<Cart>,
+    pub stock: Option<Rc<StockMap>>,
 }
 
 pub enum AppAction {
-    LoadStock(StockMap),
+    LoadStock(Rc<StockMap>),
     UpdateCart(Rc<CartAction>),
 }
 
@@ -42,11 +42,11 @@ impl AppState {
         new_cart.set_cookie()?;
         Ok(AppState {
             stock: self.stock.clone(),
-            cart: new_cart,
+            cart: Rc::new(new_cart),
         })
     }
 
-    pub fn get_item(&self, id: &i32) -> Option<&Item> {
+    pub fn get_item(&self, id: &u32) -> Option<&FrontEndItem> {
         self.stock.as_ref().and_then(|stock| stock.get(id))
     }
 
@@ -94,18 +94,18 @@ pub struct Cart {
 
 impl PartialEq for Cart {
     fn eq(&self, other: &Self) -> bool {
-        self.items.keys().collect::<Vec<&i32>>() == other.items.keys().collect::<Vec<&i32>>()
-            && self.items.values().collect::<Vec<&u32>>()
-                == other.items.values().collect::<Vec<&u32>>()
+        self.items.keys().collect::<Vec<&ItemId>>() == other.items.keys().collect::<Vec<&ItemId>>()
+            && self.items.values().collect::<Vec<&ItemId>>()
+                == other.items.values().collect::<Vec<&ItemId>>()
     }
 }
 
 #[derive(Clone)]
 pub enum CartAction {
-    AddItem(i32),
-    RemoveItem(i32),
-    IncItem(i32),
-    DecItem(i32),
+    AddItem(ItemId),
+    RemoveItem(ItemId),
+    IncItem(ItemId),
+    DecItem(ItemId),
 }
 
 impl Cart {

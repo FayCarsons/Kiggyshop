@@ -17,6 +17,7 @@ impl CheckoutCart {
             .iter()
             .map(|(id, qty)| {
                 let item = stock.get(id).unwrap();
+                let item = Item::from(item);
 
                 (item.clone(), *qty)
             })

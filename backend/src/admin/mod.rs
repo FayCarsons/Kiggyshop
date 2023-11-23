@@ -1,4 +1,8 @@
-use std::fs::{self};
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+    path::Path,
+};
 
 use actix_session::Session;
 use actix_web::{
@@ -87,4 +91,34 @@ pub async fn get_admin_dashboard() -> ShopResult<HttpResponse> {
 pub async fn get_style() -> ShopResult<HttpResponse> {
     let buffer = fs::read_to_string("./resources/admin/style.css")?;
     Ok(HttpResponse::Ok().content_type("text/css").body(buffer))
+}
+
+#[get("/dashboard/dashboard.js")]
+pub async fn get_js() -> ShopResult<HttpResponse> {
+    let buffer = fs::read_to_string("./resources/admin/dashboard.js")?;
+    Ok(HttpResponse::Ok()
+        .content_type("text/javascript")
+        .body(buffer))
+}
+
+#[post("/upload_image/{item_title}")]
+pub async fn upload_image(img_file: web::Bytes, item_title: web::Path<String>) -> HttpResponse {
+    let path = format!(
+        "./resources/images/{}.png",
+        item_title.trim().replace(' ', "")
+    );
+    if Path::new(&path).exists() {
+        fs::remove_file(&path).unwrap();
+    }
+
+    let mut file = OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .append(true)
+        .open(path)
+        .unwrap();
+    match file.write_all(&img_file) {
+        Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
+        Ok(()) => HttpResponse::Ok().finish(),
+    }
 }
