@@ -5,12 +5,12 @@ use actix_web::{
     web::{self, Json},
     HttpRequest, HttpResponse,
 };
-use common::{cart::NewCart, item::Item, order::NewOrder, CartMap};
+use common::{item::Item, CartMap};
 
 use stripe::{
-    Client, CreatePaymentLink,
-    CreatePaymentLinkAfterCompletion, CreatePaymentLinkAfterCompletionRedirect,
-    CreatePaymentLinkLineItems, CreatePaymentLinkShippingAddressCollection,
+    Client, CreatePaymentLink, CreatePaymentLinkAfterCompletion,
+    CreatePaymentLinkAfterCompletionRedirect, CreatePaymentLinkLineItems,
+    CreatePaymentLinkShippingAddressCollection,
     CreatePaymentLinkShippingAddressCollectionAllowedCountries, CreatePaymentLinkShippingOptions,
     CreatePrice, CreateProduct, CreateShippingRate, CreateShippingRateDeliveryEstimate,
     CreateShippingRateDeliveryEstimateMaximum, CreateShippingRateDeliveryEstimateMaximumUnit,
@@ -20,7 +20,10 @@ use stripe::{
 };
 
 use crate::{
-    api::stock::{dec_items, item_from_db},
+    api::{
+        order::insert_order,
+        stock::{dec_items, item_from_db},
+    },
     error::{BackendError, ShopResult},
     utils::print_red,
     DbPool, ENV,
@@ -96,11 +99,15 @@ pub async fn checkout(cart: Json<CartMap>, pool: web::Data<DbPool>) -> ShopResul
                 .map(|(price, qty)| CreatePaymentLinkLineItems {
                     quantity: *qty,
                     price: price.id.to_string(),
-                    adjustable_quantity: None
+                    adjustable_quantity: None,
                 })
                 .collect::<Vec<_>>(),
         );
-        create_payment_link.metadata = Some(cart.iter().map(|(id, qty)| (id.to_string(), qty.to_string())).collect::<HashMap<String, String>>());
+        create_payment_link.metadata = Some(
+            cart.iter()
+                .map(|(id, qty)| (id.to_string(), qty.to_string()))
+                .collect::<HashMap<String, String>>(),
+        );
 
         create_payment_link.shipping_options = Some(vec![CreatePaymentLinkShippingOptions {
             shipping_rate: Some(shipping.id.to_string()),
@@ -181,65 +188,33 @@ async fn handle_checkout(
     pool: web::Data<DbPool>,
 ) -> ShopResult<()> {
     let shipping_info = session.shipping_details.unwrap();
-
     let Shipping { address, name, .. } = shipping_info;
 
     let address = address.unwrap();
     let street = format!(
         "{} {}",
-        address.line1.unwrap(),
+        address.line1.unwrap_or_default(),
         address.line2.unwrap_or_default()
     );
-    let zipcode = address.postal_code.unwrap().parse::<i32>().unwrap();
-    let name = name.unwrap();
+    let zipcode = address.postal_code.unwrap_or_default().parse::<i32>()?;
+    let name = name.unwrap_or_default();
 
     // Collecting user cart from session metadata
     let cart = session.metadata.unwrap();
-    print_red("CART FROM METADTA: ", &cart);
-    let cart = cart.iter().map(|(id, qty)| {
-        let id = str::parse::<i32>(id)?;
-        let qty = str::parse::<i32>(qty)?;
-        Ok((id, qty))
-    }).collect::<Result<Vec<(i32, i32)>, ParseIntError>>().map_err(|e| BackendError::PaymentError(e.to_string()))?;
+    let cart = cart
+        .iter()
+        .map(|(id, qty)| {
+            let id = str::parse::<i32>(id)?;
+            let qty = str::parse::<i32>(qty)?;
+            Ok((id, qty))
+        })
+        .collect::<Result<Vec<(i32, i32)>, ParseIntError>>()
+        .map_err(|e| BackendError::PaymentError(e.to_string()))?;
 
-    let mut cart_conn = pool.get().unwrap();
-    let mut stock_conn = pool.get().unwrap();
-    let blocked_pairs = cart.clone();
+    let cart_conn = pool.get().unwrap();
+    let stock_conn = pool.get().unwrap();
+    insert_order(cart_conn, cart.clone(), name, street, zipcode).await?;
 
-    print_red("", "ENTERING DB BLOCK!");
-    web::block(move || -> ShopResult<()> {
-        use common::schema::{carts, orders};
-        use diesel::RunQueryDsl;
-
-        let order = NewOrder {
-            name: &name,
-            street: &street,
-            zipcode,
-            fulfilled: false,
-        };
-
-        let inserted_id = diesel::insert_into(orders::table)
-            .values(&order)
-            .returning(orders::dsl::id)
-            .get_result::<i32>(&mut cart_conn)?;
-
-        let new_carts = blocked_pairs
-            .into_iter()
-            .map(|(item_id, quantity)| NewCart {
-                order_id: inserted_id,
-                item_id,
-                quantity,
-            })
-            .collect::<Vec<NewCart>>();
-
-        diesel::insert_into(carts::table)
-            .values(&new_carts)
-            .execute(&mut cart_conn)?;
-        Ok(())
-    })
-    .await.expect("CRASHED WHILE INSERTING ORDER INTO DB").expect("CRASHED WHILE INSERTING ORDER INTO DB");
-
-    print_red("", "UPDATING STOCK W/ ORDER");
     dec_items(cart, stock_conn).await?;
 
     print_red("", "WEBHOOK COMPLETED");

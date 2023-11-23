@@ -1,5 +1,5 @@
 use crate::{
-    components::{dropdown::{CartDropdown, BASE_DROPDOWN_CLASS}, error::Error, footer::Footer},
+    components::{dropdown::CartDropdown, error::Error, footer::Footer},
     context::AppAction,
     hooks::use_stock,
     Context, Route,
@@ -9,7 +9,7 @@ use super::{header::Header, product_card::ProductCard};
 use common::ItemId;
 use gloo::console::log;
 use web_sys::MouseEvent;
-use yew::{function_component, html, use_context, use_state, Callback, Html, HtmlResult, AttrValue};
+use yew::{function_component, html, use_context, use_state, Callback, Html, HtmlResult};
 use yew_router::prelude::use_navigator;
 
 #[function_component(Gallery)]
@@ -50,7 +50,7 @@ pub fn gallery() -> HtmlResult {
         }
     };
 
-    let left_dropdown_class = "min-h-screen top-0 p-4 w-0 md:w-52 transition-all duration-300 ease-in-out bg-kiggygreen hidden md:flex flex-col items-start top-0 left-0";
+    let _left_dropdown_class = "min-h-screen top-0 p-4 w-0 md:w-52 transition-all duration-300 ease-in-out bg-kiggygreen hidden md:flex flex-col items-start top-0 left-0";
 
     Ok(html! {
         <div class="relative flex bg-slate-50">

@@ -2,10 +2,7 @@ use std::rc::Rc;
 
 use common::{item::FrontEndItem, ItemId, Quantity};
 use web_sys::MouseEvent;
-use yew::{
-    function_component, html, use_context, AttrValue, Callback, Html,
-    Properties,
-};
+use yew::{function_component, html, use_context, AttrValue, Callback, Html, Properties};
 use yew_router::prelude::{use_navigator, Link};
 
 use crate::{
@@ -15,23 +12,22 @@ use crate::{
         svg::Burger,
     },
     context::{AppAction, CartAction},
-    utils::{kind_to_price, title_to_path, Palette, checkout},
+    utils::{checkout, kind_to_price, title_to_path, Palette},
     Context, Route,
 };
 
 pub const BASE_DROPDOWN_CLASS: &str = "";
-const DEFAULT_DROPDOWN_CLASS: &str = "w-52";
 
 // OLD CART-DROPDOWN
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct DropDownProps {
     pub onclick: Option<Callback<MouseEvent>>,
-    pub class: AttrValue
+    pub class: AttrValue,
 }
 
 #[function_component(CartDropdown)]
-pub fn cart_dropdown(DropDownProps { onclick , class}: &DropDownProps) -> Html {
+pub fn cart_dropdown(DropDownProps { onclick, class }: &DropDownProps) -> Html {
     let ctx = use_context::<Context>().unwrap();
     let total = ctx.get_total();
 

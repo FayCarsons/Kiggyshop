@@ -4,12 +4,12 @@ use common::{
     item::{FrontEndItem, Item},
     log_debug, StockMap,
 };
-use gloo::{net::http::Request, console::log};
+use gloo::{console::log, net::http::Request};
+use std::rc::Rc;
 use yew::{
     hook,
     suspense::{use_future, Suspension, SuspensionResult},
 };
-use std::rc::Rc;
 
 #[hook]
 pub fn use_stock() -> SuspensionResult<FEResult<Rc<StockMap>>> {
@@ -31,10 +31,10 @@ pub fn use_stock() -> SuspensionResult<FEResult<Rc<StockMap>>> {
             stock.shrink_to_fit();
             let stock = Rc::new(stock);
             Ok(Ok(stock))
-        },
+        }
         Err(_) => {
             log!("use_stock went to messy match arm, creating new suspension ??");
             Err(Suspension::new().0)
-        },
+        }
     }
 }

@@ -4,10 +4,12 @@ use actix_web::{
     HttpResponse,
 };
 use common::{
-    order::{Order, OrderFilter},
+    cart::NewCart,
+    order::{NewOrder, Order, OrderFilter},
     schema::orders::{self, fulfilled},
 };
-use diesel::prelude::*;
+use diesel::{prelude::*, r2d2::ConnectionManager};
+use r2d2::PooledConnection;
 
 use crate::{error::ShopResult, DbPool};
 
@@ -40,4 +42,44 @@ pub async fn get_orders(
 
     let json = serde_json::to_string(&orders)?;
     Ok(HttpResponse::Ok().content_type("text/json").body(json))
+}
+
+pub async fn insert_order(
+    mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
+    cart: Vec<(i32, i32)>,
+    name: String,
+    street: String,
+    zipcode: i32,
+) -> ShopResult<()> {
+    web::block(move || -> ShopResult<()> {
+        use common::schema::carts;
+
+        let order = NewOrder {
+            name: &name,
+            street: &street,
+            zipcode,
+            fulfilled: false,
+        };
+
+        let inserted_id = diesel::insert_into(orders::table)
+            .values(&order)
+            .returning(orders::dsl::id)
+            .get_result::<i32>(&mut conn)?;
+
+        let new_carts = cart
+            .into_iter()
+            .map(|(item_id, quantity)| NewCart {
+                order_id: inserted_id,
+                item_id,
+                quantity,
+            })
+            .collect::<Vec<NewCart>>();
+
+        diesel::insert_into(carts::table)
+            .values(&new_carts)
+            .execute(&mut conn)?;
+        Ok(())
+    })
+    .await
+    .expect("CRASHED WHILE INSERTING ORDER INTO DB")
 }

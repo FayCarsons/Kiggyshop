@@ -24,7 +24,7 @@ struct Password {
 
 fn get_session(session: &Session) -> ShopResult<bool> {
     match session.get::<bool>("admin-access") {
-        Ok(msg) => msg.map_or(Ok(false), |access| Ok(access)),
+        Ok(msg) => msg.map_or(Ok(false), Ok),
         Err(e) => Err(BackendError::ContentNotFound(e.to_string())),
     }
 }
@@ -95,7 +95,7 @@ pub async fn get_style() -> ShopResult<HttpResponse> {
 
 #[get("/dashboard/dashboard.js")]
 pub async fn get_js() -> ShopResult<HttpResponse> {
-    let buffer = fs::read_to_string("./resources/admin/dashboard.js")?;
+    let buffer = fs::read_to_string("./resources/admin/closure.js")?;
     Ok(HttpResponse::Ok()
         .content_type("text/javascript")
         .body(buffer))

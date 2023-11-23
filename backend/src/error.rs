@@ -1,5 +1,5 @@
 use core::fmt;
-use std::env::VarError;
+use std::{env::VarError, num::ParseIntError};
 
 use actix_web::{error::BlockingError, HttpResponse, ResponseError};
 
@@ -71,6 +71,12 @@ impl From<SerdeError> for BackendError {
 impl From<StripeError> for BackendError {
     fn from(value: StripeError) -> Self {
         Self::PaymentError(value.to_string())
+    }
+}
+
+impl From<ParseIntError> for BackendError {
+    fn from(value: ParseIntError) -> Self {
+        Self::DeserializationError(value.to_string())
     }
 }
 

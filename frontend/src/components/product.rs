@@ -1,14 +1,12 @@
-use std::rc::Rc;
-
 use common::{item::FrontEndItem, ItemId};
 use yew::{
     function_component, html, use_context, use_state, Callback, Html, HtmlResult, MouseEvent,
-    Properties, Suspense, AttrValue,
+    Properties, Suspense,
 };
 
 use crate::{
     components::{
-        dropdown::{CartDropdown, BASE_DROPDOWN_CLASS}, error::Error, footer::Footer, header::Header, suspense::Loading,
+        dropdown::CartDropdown, error::Error, footer::Footer, header::Header, suspense::Loading,
     },
     context::{AppAction, CartAction},
     hooks::use_stock,

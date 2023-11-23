@@ -113,14 +113,8 @@ const show_stock = async () => {
   for (let [id, { title, kind, description, quantity }] of stock) {
     id = parseInt(id);
     const row = document.createElement("tr");
-    row.innerHTML = `
-                    <td><input type="checkbox" id="${id}"></td>
-                    <td>${title.toUpperCase()}</td>
-                    <td>${kind}</td>
-                    <td>${description}</td>
-                    <td>${quantity}</td>
-                    <td><button onclick="show_item_modal(itemAction.edit, ${id})">Edit</button></td>
-                    `;
+    // Minifier doesn't catch the linefeeds in this expression so have to do it manually
+    row.innerHTML = `<td><input type="checkbox" id="${id}"></td><td>${title.toUpperCase()}</td><td>${kind}</td><td>${description}</td><td>${quantity}</td><td><button onclick="show_item_modal(itemAction.edit, ${id})">Edit</button></td>`;
     stockList.appendChild(row);
   }
 };
@@ -152,13 +146,7 @@ const update_order_UI = (orders) => {
 
   orders.forEach((order) => {
     const row = document.createElement("tr");
-    row.innerHTML = `
-                    <td>${order.id}</td>
-                    <td>${order.name}</td>
-                    <td>${order.street}</td>
-                    <td>${order.zipcode}</td>
-                    <td>${order.fulfilled}</td>
-                `;
+    row.innerHTML = `<td>${order.id}</td><td>${order.name}</td><td>${order.street}</td><td>${order.zipcode}</td><td>${order.fulfilled}</td>`;
     orderList.appendChild(row);
   });
 };

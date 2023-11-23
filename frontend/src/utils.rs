@@ -4,10 +4,10 @@ use crate::context::Cart;
 
 use super::error::{ErrorType, FEResult, FrontendError};
 
-use common::{Quantity, to_string};
+use common::Quantity;
 use gloo::net::http::Request;
 use web_sys::{HtmlDocument, MouseEvent};
-use yew::{html, AttrValue, Html, platform::spawn_local};
+use yew::{html, platform::spawn_local, AttrValue, Html};
 
 pub const SHIPPING_COST: f64 = 10.;
 
@@ -101,8 +101,7 @@ pub fn get_quantity_element(quantity: &Quantity) -> Html {
 }
 
 pub fn checkout(cart: Rc<Cart>) -> impl Fn(MouseEvent) {
-    move |_: MouseEvent| 
-    {
+    move |_: MouseEvent| {
         let cart = cart.clone();
         spawn_local(async move {
             let res = Request::post("/api/checkout")

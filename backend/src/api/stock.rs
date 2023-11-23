@@ -1,7 +1,7 @@
 use common::{
     item::{InputItem, Item, NewItem},
     schema::stock,
-    ItemId, Quantity,
+    ItemId,
 };
 
 use actix_web::{
@@ -11,13 +11,13 @@ use actix_web::{
 };
 use r2d2::PooledConnection;
 use serde_json::to_string;
-use std::{fs, sync::Arc};
+use std::fs;
 
-use diesel::{debug_query, prelude::*, r2d2::ConnectionManager};
+use diesel::{prelude::*, r2d2::ConnectionManager};
 
 use crate::{
     error::{BackendError, ShopResult},
-    DbPool, ENV, utils::print_red,
+    DbPool, ENV,
 };
 
 pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> ShopResult<Item> {

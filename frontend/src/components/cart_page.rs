@@ -1,15 +1,15 @@
 use std::rc::Rc;
 
 use common::item::FrontEndItem;
-use gloo::net::http::Request;
+
 use web_sys::MouseEvent;
-use yew::{function_component, html, platform::spawn_local, use_context, Callback, Html};
+use yew::{function_component, html, use_context, Callback, Html};
 use yew_router::prelude::use_navigator;
 
 use crate::{
     components::error::Error,
     context::{AppAction, CartAction},
-    utils::{get_quantity_element, kind_to_price, title_to_path, SHIPPING_COST, checkout},
+    utils::{checkout, get_quantity_element, kind_to_price, title_to_path, SHIPPING_COST},
     Context, Route,
 };
 
