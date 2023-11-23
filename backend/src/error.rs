@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{env::VarError, num::ParseIntError};
 
-use actix_web::{error::BlockingError, HttpResponse, ResponseError};
+use actix_web::{error::{BlockingError, PayloadError}, HttpResponse, ResponseError};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Error as SerdeError;
@@ -21,6 +21,7 @@ pub enum BackendError {
     SerializationError(String),
     DeserializationError(String),
     PaymentError(String),
+    BadRequest(String),
     Unauthorized,
     RateLimitError,
 }
@@ -80,6 +81,12 @@ impl From<ParseIntError> for BackendError {
     }
 }
 
+impl From<PayloadError> for BackendError {
+    fn from(value: PayloadError) -> Self {
+        BackendError::BadRequest(value.to_string())
+    }
+}
+
 impl From<BackendError> for String {
     fn from(value: BackendError) -> Self {
         match value {
@@ -101,6 +108,7 @@ impl From<BackendError> for String {
             }
             BackendError::EnvError(s) => format!("Environment error: {s}"),
             BackendError::PaymentError(s) => format!("Payment error: {s}"),
+            BackendError::BadRequest(s) => format!("Bad Request: {s}")
         }
     }
 }
@@ -121,6 +129,7 @@ impl ResponseError for BackendError {
             Self::ResourceLocked(s) => HttpResponse::Locked().body(s.clone()),
             Self::Unauthorized => HttpResponse::Forbidden().body(""),
             Self::RateLimitError => HttpResponse::Ok().finish(),
+            Self::BadRequest(s) => HttpResponse::BadRequest().body(s.clone())
         }
     }
 }

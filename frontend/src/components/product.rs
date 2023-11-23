@@ -6,7 +6,7 @@ use yew::{
 
 use crate::{
     components::{
-        dropdown::CartDropdown, error::Error, footer::Footer, header::Header, suspense::Loading,
+        dropdown::{CartDropdown, LEFT_DROPDOWN_CLASS, RIGHT_DROPDOWN_CLASS}, error::Error, footer::Footer, header::Header, suspense::Loading,
     },
     context::{AppAction, CartAction},
     hooks::use_stock,
@@ -43,11 +43,9 @@ pub fn product_page(props: &ProductPageProps) -> Html {
         move |_| show_cart.set(!*show_cart)
     };
 
-    let left_dropdown_class = "min-h-screen top-0 p-4 w-0 md:w-52 transition-all duration-300 ease-in-out bg-kiggygreen hidden md:flex md:flex-col items-start top-0 left-0";
-
     html! {
         <div class="relative flex min-h-screen bg-slate-50">
-            <CartDropdown onclick={None::<Callback<MouseEvent>>} class={left_dropdown_class}/>
+            <CartDropdown onclick={None::<Callback<MouseEvent>>} class={LEFT_DROPDOWN_CLASS}/>
             <div class="flex flex-col min-h-screen">
                 <Header show_cart={*show_cart} onclick={set_cart.clone()}/>
                 {child}
@@ -55,7 +53,7 @@ pub fn product_page(props: &ProductPageProps) -> Html {
             </div>
 
             if *show_cart {
-                <CartDropdown onclick={set_cart} class={"bg-kiggygreen flex flex-col items-end top-0 right-0s md:hidden"}/>
+                <CartDropdown onclick={set_cart} class={RIGHT_DROPDOWN_CLASS}/>
             }
         </div>
     }

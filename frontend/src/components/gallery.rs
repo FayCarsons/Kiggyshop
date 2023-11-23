@@ -1,5 +1,5 @@
 use crate::{
-    components::{dropdown::CartDropdown, error::Error, footer::Footer},
+    components::{dropdown::{CartDropdown, LEFT_DROPDOWN_CLASS, RIGHT_DROPDOWN_CLASS}, error::Error, footer::Footer},
     context::AppAction,
     hooks::use_stock,
     Context, Route,
@@ -54,7 +54,7 @@ pub fn gallery() -> HtmlResult {
 
     Ok(html! {
         <div class="relative flex bg-slate-50">
-            <CartDropdown onclick={None::<Callback<MouseEvent>>} class={"w-0 opacity-0 md:opacity-100 md:w-52 transition-all duration-300 ease-in-out bg-kiggygreen flex md:flex-col md:top-0 md:left-0 md:p-4"}/>
+            <CartDropdown onclick={None::<Callback<MouseEvent>>} class={LEFT_DROPDOWN_CLASS}/>
             <div label="main-content" class="flex-1 max-w-full">
                 <Header show_cart={*show_cart} onclick={set_cart.clone()}/>
                 <div label="product-gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
@@ -64,7 +64,7 @@ pub fn gallery() -> HtmlResult {
             </div>
 
             if *show_cart {
-                <CartDropdown onclick={set_cart} class={"bg-kiggygreen flex flex-col items-start top-0 right-0 p-4 md:p-0 md:opacity-0 md:w-0 transition-all duration-300 ease-in-out"}/>
+                <CartDropdown onclick={set_cart} class={RIGHT_DROPDOWN_CLASS}/>
             }
         </div>
     })

@@ -2,7 +2,7 @@
 
 // GLOBALS AND ENUMS
 let currentTab = null;
-let stock = new Map();
+let stock = {};
 
 const tab_to_str = (tab) => {
   if (tab == tabState.stock) {
@@ -84,6 +84,7 @@ const show_tab = async (tab) => {
 };
 
 const init_stock = async () => {
+  if (Object.entries(stock).length > 0) stock = {};
   try {
     const res = await fetch("/api/stock/get", {
       method: "GET",
@@ -93,9 +94,8 @@ const init_stock = async () => {
     });
 
     const stock_res = await res.json();
-    console.log(stock_res)
     for (let item of stock_res) {
-      stock.set(item.id, item);
+      stock[item.id] = item;
     }
   } catch (err) {
     alert(err);
@@ -103,14 +103,14 @@ const init_stock = async () => {
 };
 
 const show_stock = async () => {
-  if (stock.size === 0) {
+  if (Object.entries(stock).length === 0) {
     await init_stock();
   }
 
   const stockList = document.getElementById("stockList");
   stockList.innerHTML = "";
 
-  for (let [id, { title, kind, description, quantity }] of stock) {
+  for (let [id, { title, kind, description, quantity }] of Object.entries(stock)) {
     id = parseInt(id);
     const row = document.createElement("tr");
     // Minifier doesn't catch the linefeeds in this expression so have to do it manually
@@ -190,7 +190,7 @@ const display_item = async (item_id) => {
   if (stock.size === 0) {
     app_error();
   }
-  const { title, kind, description, quantity } = stock.get(item_id);
+  const { title, kind, description, quantity } = stock[item_id];
 
   document.getElementById("title").value = title;
   document.getElementById("kind").value = kind;
@@ -249,6 +249,7 @@ const do_item_action = async (action, body = null, id = null) => {
       );
     }
     close_modal();
+    init_stock();
     show_stock();
   } catch (err) {
     alert(err);

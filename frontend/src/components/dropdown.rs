@@ -16,8 +16,8 @@ use crate::{
     Context, Route,
 };
 
-pub const BASE_DROPDOWN_CLASS: &str = "";
-
+pub const LEFT_DROPDOWN_CLASS: &str = "w-0 opacity-0 md:opacity-100 md:w-52 transition-all duration-300 ease-in-out bg-kiggygreen flex md:flex-col md:top-0 md:left-0 md:p-4";
+pub const RIGHT_DROPDOWN_CLASS: &str = "bg-kiggygreen flex flex-col items-start top-0 right-0 p-4 md:p-0 md:opacity-0 md:w-0 transition-all duration-300 ease-in-out";
 // OLD CART-DROPDOWN
 
 #[derive(Clone, PartialEq, Properties)]

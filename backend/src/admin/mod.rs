@@ -93,6 +93,8 @@ pub async fn get_style() -> ShopResult<HttpResponse> {
     Ok(HttpResponse::Ok().content_type("text/css").body(buffer))
 }
 
+
+
 #[get("/dashboard/dashboard.js")]
 pub async fn get_js() -> ShopResult<HttpResponse> {
     let buffer = fs::read_to_string("./resources/admin/closure.js")?;
@@ -101,8 +103,11 @@ pub async fn get_js() -> ShopResult<HttpResponse> {
         .body(buffer))
 }
 
+const MAX_SIZE: usize = 1_000_000;
 #[post("/upload_image/{item_title}")]
-pub async fn upload_image(img_file: web::Bytes, item_title: web::Path<String>) -> HttpResponse {
+pub async fn upload_image(mut payload: web::Payload, item_title: web::Path<String>) -> ShopResult<HttpResponse> {
+    use futures::StreamExt;
+
     let path = format!(
         "./resources/images/{}.png",
         item_title.trim().replace(' ', "")
@@ -111,14 +116,26 @@ pub async fn upload_image(img_file: web::Bytes, item_title: web::Path<String>) -
         fs::remove_file(&path).unwrap();
     }
 
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk?;
+        let curr_len = body.len() + chunk.len();
+        if curr_len > MAX_SIZE {
+            return Err(BackendError::BadRequest("overflow".to_string()))
+        }
+        body.extend_from_slice(&chunk);
+    }
+
     let mut file = OpenOptions::new()
         .create_new(true)
         .write(true)
         .append(true)
         .open(path)
         .unwrap();
-    match file.write_all(&img_file) {
+    let res = match file.write_all(&body) {
         Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
         Ok(()) => HttpResponse::Ok().finish(),
-    }
+    };
+
+    Ok(res)
 }
