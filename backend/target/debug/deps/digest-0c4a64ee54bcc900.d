@@ -1,0 +1,12 @@
+/Users/fay/Desktop/Code/Rust/printshop/backend/target/debug/deps/libdigest-0c4a64ee54bcc900.rmeta: /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/lib.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/ct_variable.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/rt_variable.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/wrapper.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/xof_reader.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/digest.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/mac.rs
+
+/Users/fay/Desktop/Code/Rust/printshop/backend/target/debug/deps/digest-0c4a64ee54bcc900.d: /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/lib.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/ct_variable.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/rt_variable.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/wrapper.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/xof_reader.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/digest.rs /Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/mac.rs
+
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/lib.rs:
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api.rs:
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/ct_variable.rs:
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/rt_variable.rs:
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/wrapper.rs:
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/core_api/xof_reader.rs:
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/digest.rs:
+/Users/fay/.cargo/registry/src/index.crates.io-6f17d22bba15001f/digest-0.10.7/src/mac.rs:

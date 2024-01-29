@@ -7,6 +7,8 @@ mod env;
 mod error;
 mod stripe;
 mod utils;
+mod model;
+
 
 use actix_cors::Cors;
 use actix_session::{

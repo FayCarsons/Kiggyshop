@@ -3,7 +3,7 @@ use actix_web::{
     web::{self, Path},
     HttpResponse,
 };
-use common::{
+use crate::model::{
     cart::NewCart,
     order::{NewOrder, Order, OrderFilter},
     schema::orders::{self, fulfilled},
@@ -52,7 +52,7 @@ pub async fn insert_order(
     zipcode: i32,
 ) -> ShopResult<()> {
     web::block(move || -> ShopResult<()> {
-        use common::schema::carts;
+        use crate::model::schema::carts;
 
         let order = NewOrder {
             name: &name,

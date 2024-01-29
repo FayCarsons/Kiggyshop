@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KiggyShop</title>
+    <link rel="stylesheet" href="http://localhost:8000/out.css" />
+	<link rel="icon" type="image/png" href="http://localhost:8000/resources/images/logo.png"/>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="http://localhost:8000/elm.js"></script>
+    <script>
+      const log = x => {
+        console.log(x);
+        return x
+      };
+      const app = Elm.Main.init({
+        node: document.getElementById("root"),
+        flags: localStorage.getItem("cart"),
+      });
+      app.ports.setCart.subscribe((cart) =>
+        localStorage.setItem("cart", JSON.stringify(cart))
+      );
+      app.ports.followLink.subscribe(url => window.open(log(url), "_blank"));
+    </script>
+  </body>
+</html>

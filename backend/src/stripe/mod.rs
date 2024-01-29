@@ -5,7 +5,7 @@ use actix_web::{
     web::{self, Json},
     HttpRequest, HttpResponse,
 };
-use common::{item::Item, CartMap};
+use crate::model::{item::Item, ItemId, Quantity};
 
 use stripe::{
     Client, CreatePaymentLink, CreatePaymentLinkAfterCompletion,
@@ -30,7 +30,7 @@ use crate::{
 };
 
 #[post("/checkout")]
-pub async fn checkout(cart: Json<CartMap>, pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
+pub async fn checkout(cart: Json<HashMap<ItemId, Quantity>>, pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
     let mut item_map = HashMap::<Item, u32>::new();
     for (id, qty) in cart.iter() {
         let item = item_from_db(*id, &pool).await?;
