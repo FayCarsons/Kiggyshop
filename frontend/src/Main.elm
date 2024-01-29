@@ -101,7 +101,7 @@ onUrlRequest req =
 getStockWithCart : Cart -> Cmd Msg
 getStockWithCart jsonCart =
     Http.get
-        { url = "http://localhost:8000/stock.json"
+        { url = "/api/stock/get"
         , expect = Http.expectJson (\res -> ( jsonCart, res ) |> GotCart |> Load) Stock.stockDecoder
         }
 

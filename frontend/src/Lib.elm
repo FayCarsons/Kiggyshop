@@ -96,7 +96,7 @@ getTotal cart stock =
 postCheckout : Cart -> Cmd Msg.Msg
 postCheckout cart =
     Http.post
-        { url = "buttbuddy"
+        { url = "/checkout"
         , body = Http.jsonBody (cartEncoder cart)
         , expect = Http.expectString (Msg.GotStripe >> Msg.Nav)
         }
