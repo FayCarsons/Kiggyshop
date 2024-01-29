@@ -1,1 +1,0 @@
-SelectStatement<FromClause<orders::table>, diesel::query_builder::select_clause::SelectClause<expression::select_by::SelectBy<model::order::Order, _>>>
