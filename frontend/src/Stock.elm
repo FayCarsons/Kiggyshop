@@ -1,5 +1,6 @@
 module Stock exposing (..)
 
+import Dict exposing (Dict)
 import Http
 import Json.Decode as JD
 
@@ -11,16 +12,16 @@ type ProductKind
 
 
 type alias Product =
-    { id : Int
-    , title : String
+    { title : String
     , description : String
     , kind : ProductKind
     , quantity : Int
     }
 
+type alias ItemId = Int
 
 type alias Stock =
-    List Product
+    Dict ItemId Product
 
 
 type alias StockResult =
@@ -49,8 +50,7 @@ kindDecoder =
 
 productDecoder : JD.Decoder Product
 productDecoder =
-    JD.map5 Product
-        (JD.field "id" JD.int)
+    JD.map4 Product
         (JD.field "title" JD.string)
         (JD.field "description" JD.string)
         (JD.field "kind" kindDecoder)
@@ -59,7 +59,21 @@ productDecoder =
 
 stockDecoder : JD.Decoder Stock
 stockDecoder =
-    JD.list productDecoder
+    JD.keyValuePairs productDecoder
+        |> JD.andThen
+            (\pairs ->
+                let
+                    addPair : ( String, Product ) -> JD.Decoder Stock -> JD.Decoder Stock
+                    addPair ( k, v ) decoder =
+                        case (String.toInt k) of
+                            Just key ->
+                                JD.map (Dict.insert key v) decoder
+
+                            Nothing ->
+                                JD.fail "Key must be an integer"
+                in
+                List.foldr addPair (JD.succeed Dict.empty) pairs
+            )
 
 
 kindToPrice : ProductKind -> Int

@@ -15,7 +15,7 @@ import Json.Decode as JD
 import Json.Encode as JE
 import Lib exposing (..)
 import Messages exposing (Loading(..), Menu(..), Msg(..), NavMsg(..), Route(..))
-import Ports exposing (followLink, setCart)
+import Ports exposing (setCart)
 import Stock exposing (Stock)
 import Url exposing (Url)
 import Url.Parser as Parse exposing ((</>))
@@ -90,11 +90,7 @@ onUrlRequest req =
         Browser.Internal url ->
             Req url |> Nav
 
-        Browser.External s ->
-            let
-                _ =
-                    followLink s
-            in
+        Browser.External _ ->
             NoOp
 
 
@@ -289,11 +285,11 @@ matchPage ({ page } as state) =
         Item id ->
             let
                 maybeProduct =
-                    get (dec id) state.shop.stock
+                    Dict.get id state.shop.stock
             in
             case maybeProduct of
                 Just item ->
-                    product item state.view
+                    product id item state.view
 
                 Nothing ->
                     errorPage ()

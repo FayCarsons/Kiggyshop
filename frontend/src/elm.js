@@ -6577,16 +6577,12 @@ var $author$project$Messages$NoOp = {$: 'NoOp'};
 var $author$project$Messages$Req = function (a) {
 	return {$: 'Req', a: a};
 };
-var $elm$json$Json$Encode$string = _Json_wrap;
-var $author$project$Ports$followLink = _Platform_outgoingPort('followLink', $elm$json$Json$Encode$string);
 var $author$project$Main$onUrlRequest = function (req) {
 	if (req.$ === 'Internal') {
 		var url = req.a;
 		return $author$project$Messages$Nav(
 			$author$project$Messages$Req(url));
 	} else {
-		var s = req.a;
-		var _v1 = $author$project$Ports$followLink(s);
 		return $author$project$Messages$NoOp;
 	}
 };
@@ -7023,6 +7019,7 @@ var $author$project$Components$Loading$errorPage = function (_v0) {
 				$elm$html$Html$text('oh noes :0')
 			]));
 };
+var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -7151,10 +7148,10 @@ var $elm$core$String$replace = F3(
 	});
 var $elm$core$String$trim = _String_trim;
 var $author$project$Lib$titleToPath = function (s) {
-	return '/resources/images/' + (A2(
+	return '[VITE_PLUGIN_ELM_ASSET:/images/' + (A2(
 		$elm$core$Basics$composeR,
 		$elm$core$String$trim,
-		A2($elm$core$String$replace, ' ', ''))(s) + '.png');
+		A2($elm$core$String$replace, ' ', ''))(s) + '.png]');
 };
 var $author$project$Components$Checkout$cartItem = function (_v0) {
 	var id = _v0.a.id;

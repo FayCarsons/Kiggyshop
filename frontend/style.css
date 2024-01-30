@@ -4,15 +4,15 @@
 
 @font-face {
     font-family: "BUBBLE";
-    src: url("./resources/fonts/bubble.ttf");
+    src: url("/fonts/bubble.ttf");
 }
 
 @font-face {
     font-family: "BUBBLEGUM";
-    src: url("./resources/fonts/bubblegums/BUBBLEGUMS.TTF");
+    src: url("/fonts/bubblegums/BUBBLEGUMS.TTF");
 }
 
 @font-face {
     font-family: "BUBBLEUP";
-    src: url("./resources/fonts/bubbledupp/Bubbledupp-Regular.ttf");
+    src: url("/fonts/bubbledupp/Bubbledupp-Regular.ttf");
 }

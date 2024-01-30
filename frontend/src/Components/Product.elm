@@ -8,16 +8,16 @@ import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Lib exposing (getQuantityElement, titleToPath)
 import Messages as Msg exposing (Msg)
-import Stock exposing (Product)
+import Stock exposing (Product, ItemId)
 
 
-product : Product -> Msg.Menu -> Html Msg
-product item menu =
+product : ItemId -> Product -> Msg.Menu -> Html Msg
+product id item menu =
     div [ Attr.class "relative flex min-h-screen bg-slate-50" ]
         [ Dropdown.dropdown { click = Nothing, class = Dropdown.leftDropdownClass }
         , div [ Attr.class "flex flex-col min-h-screen" ]
             [ header Msg.FlipMenu menu
-            , productPage item
+            , productPage id item
             , case menu of
                 Msg.Open ->
                     text ""
@@ -28,8 +28,8 @@ product item menu =
         ]
 
 
-productPage : Product -> Html Msg
-productPage { id, title, description, kind, quantity } =
+productPage : ItemId -> Product -> Html Msg
+productPage id { title, description, kind, quantity } =
     div [ Attr.class "flex flex-col items-center md:flex-row md:justify-center" ]
         [ div [ Attr.class "md:w-1/2 p-4 flex flex-col items-center justify-center" ]
             [ img [ title |> titleToPath |> Attr.src, Attr.alt title, Attr.class "w-full h-auto object-cover lg" ] [] ]

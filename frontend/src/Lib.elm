@@ -6,7 +6,7 @@ import Html exposing (Html, p, text)
 import Html.Attributes as Attr
 import Http
 import Messages as Msg
-import Stock exposing (Product, Stock)
+import Stock exposing (Product, Stock,ItemId)
 
 
 inc : number -> number
@@ -28,24 +28,14 @@ throw err =
     ()
 
 
-get : Int -> List a -> Maybe a
-get n l =
-    List.head (List.drop n l)
-
-
 titleToPath : String -> String
 titleToPath s =
-    "/resources/images/" ++ (String.trim >> String.replace " " "") s ++ ".png"
+    "/images/" ++ (String.trim >> String.replace " " "") s ++ ".png"
 
 
 findItem : Int -> Stock -> Maybe Product
 findItem itemId stock =
-    case List.filter (\{ id } -> id == itemId) stock of
-        [ item ] ->
-            Just item
-
-        _ ->
-            Nothing
+    Dict.get itemId stock
 
 
 boundQuantityInStock : (Int -> Int) -> Quantity -> Product -> Int
@@ -79,24 +69,20 @@ getQuantityElement qty =
         text ""
 
 
-getItemQuantityPairs : Cart -> Stock -> List ( Product, Cart.Quantity )
+getItemQuantityPairs : Cart -> Stock -> List ( (ItemId, Product), Cart.Quantity )
 getItemQuantityPairs cart stock =
-    List.filterMap
-        (\({ id } as item) ->
-            Dict.get id cart |> Maybe.andThen (\qty -> Just ( item, qty ))
-        )
-        stock
+    Dict.toList cart |> List.filterMap (\(id, qty) -> Dict.get id stock |> Maybe.andThen (\item -> Just ((id, item), qty)))
 
 
 getTotal : Cart -> Stock -> Int
 getTotal cart stock =
-    List.sum (List.filterMap (\{ id, kind } -> Dict.get id cart |> Maybe.map (\qty -> qty * Stock.kindToPrice kind)) stock)
+    Dict.toList cart |> List.filterMap (\(id, qty) -> Dict.get id stock |> Maybe.andThen (\{kind} -> Just <| Stock.kindToPrice kind * qty)) |> List.sum
 
 
 postCheckout : Cart -> Cmd Msg.Msg
 postCheckout cart =
     Http.post
-        { url = "/checkout"
+        { url = "/api/checkout"
         , body = Http.jsonBody (cartEncoder cart)
         , expect = Http.expectString (Msg.GotStripe >> Msg.Nav)
         }

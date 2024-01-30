@@ -10,6 +10,14 @@ pub struct InputItem {
     pub quantity: i32,
 }
 
+impl From<Item> for InputItem {
+    fn from(Item { id, title, kind, description, quantity }: Item) -> Self {
+        Self {
+            title, kind, description, quantity
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, Hash,Queryable, Selectable)]
 #[diesel(table_name = super::schema::stock)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
