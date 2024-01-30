@@ -97,6 +97,7 @@ onUrlRequest req =
 getStockWithCart : Cart -> Cmd Msg
 getStockWithCart jsonCart =
     Http.get
+        {- Http requests are being proxied by Vite to the Rust backend -}
         { url = "/api/stock/get"
         , expect = Http.expectJson (\res -> ( jsonCart, res ) |> GotCart |> Load) Stock.stockDecoder
         }

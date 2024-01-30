@@ -95,7 +95,7 @@ pub async fn get_style() -> ShopResult<HttpResponse> {
 
 #[get("/dashboard/dashboard.js")]
 pub async fn get_js() -> ShopResult<HttpResponse> {
-    let buffer = fs::read_to_string("./resources/admin/closure.js")?;
+    let buffer = fs::read_to_string("./resources/admin/dashboard.js")?;
     Ok(HttpResponse::Ok()
         .content_type("text/javascript")
         .body(buffer))

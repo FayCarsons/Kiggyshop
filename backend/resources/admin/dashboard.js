@@ -5,61 +5,52 @@ let currentTab = null;
 let stock = {};
 
 const tab_to_str = (tab) => {
-  if (tab == tabState.stock) {
-    return "stock";
-  } else if (tab == tabState.orders) {
-    return "orders";
-  } else {
-    app_error();
-  }
+  return (
+    {
+      [tabState.stock]: "stock",
+      [tabState.orders]: "orders",
+    }[tab] ?? fail()
+  );
 };
 
-const action_to_method = (action) => {
-    switch(action) {
-        case itemAction.add:
-            return 'PUT'
-        case itemAction.edit: 
-            return 'PUT'
-        case itemAction.delete:
-            return 'DELETE'
-        default:
-            app_error()
-    }
+const actionToMethod = (action) => {
+  return {
+    [itemAction.add]: "PUT",
+    [itemAction.edit]: "PUT",
+    [itemAction.delete]: "delete",
+  }[action];
 };
 
-const action_to_url = (action, id = null) => {
-  if (action == itemAction.add && id === null) {
-    return "/api/stock/add";
-  } else if (action == itemAction.edit && id) {
-    return `/api/stock/update/${id}`;
-  } else if (action == itemAction.delete && id === null) {
-    return `/api/stock/delete`;
-  } else {
-    app_error();
-  }
+const actionToUrl = (action, id = null) => {
+  return (
+    {
+      [[itemAction.add, false]]: "/api/stock/add",
+      [[itemAction.edit, true]]: `/api/stock/update/${id}`,
+      [[itemAction.delete, false]]: "/api/stock/delete",
+    }[[action, !!id]] ?? fail()
+  );
 };
 
-const action_to_str = (action) => {
-  switch (action) {
-    case itemAction.edit:
-      return "edit";
-    case itemAction.add:
-      return "add";
-    case itemAction.delete:
-      return "delete";
-  }
+const actionToStr = (action) => {
+  return (
+    {
+      [itemAction.edit]: "edit",
+      [itemAction.add]: "add",
+      [itemAction.delete]: "delete",
+    }[action] ?? fail()
+  );
 };
 
-const app_error = () => {
+const fail = () => {
   alert("Something has gone horribly wrong, call your girlfriend");
 };
 
 const orderFilterDropDown = document.getElementById("orderFilter");
 orderFilterDropDown.addEventListener("change", () => {
-  show_orders(orderFilterDropDown.value);
+  showOrders(orderFilterDropDown.value);
 });
 
-const show_tab = async (tab) => {
+const showTab = async (tab) => {
   if (
     (tab == tabState.stock && currentTab == tabState.stock) ||
     (tab == tabState.orders && currentTab == tabState.orders)
@@ -76,14 +67,14 @@ const show_tab = async (tab) => {
 
   if (tab == tabState.stock) {
     currentTab = tabState.stock;
-    show_stock();
+    showStock();
   } else if (tab == tabState.orders) {
     currentTab = tabState.orders;
-    show_orders("All");
+    showOrders("All");
   }
 };
 
-const init_stock = async () => {
+const initStock = async () => {
   if (Object.entries(stock).length > 0) stock = {};
   try {
     const res = await fetch("/api/stock/get", {
@@ -93,33 +84,31 @@ const init_stock = async () => {
       },
     });
 
-    const stock_res = await res.json();
-    for (let item of stock_res) {
-      stock[item.id] = item;
-    }
+    stock = (await res.json()) ?? {};
   } catch (err) {
     alert(err);
   }
 };
 
-const show_stock = async () => {
-  if (Object.entries(stock).length === 0) {
-    await init_stock();
+const showStock = async () => {
+  if (Object.keys(stock).length === 0) {
+    await initStock();
   }
 
   const stockList = document.getElementById("stockList");
   stockList.innerHTML = "";
 
-  for (let [id, { title, kind, description, quantity }] of Object.entries(stock)) {
+  for (let [id, item] of Object.entries(stock)) {
     id = parseInt(id);
+    const { title, kind, description, quantity } = item;
     const row = document.createElement("tr");
     // Minifier doesn't catch the linefeeds in this expression so have to do it manually
-    row.innerHTML = `<td><input type="checkbox" id="${id}"></td><td>${title.toUpperCase()}</td><td>${kind}</td><td>${description}</td><td>${quantity}</td><td><button onclick="show_item_modal(itemAction.edit, ${id})">Edit</button></td>`;
+    row.innerHTML = `<td><input type="checkbox" id="${id}"></td><td>${title.toUpperCase()}</td><td>${kind}</td><td>${description}</td><td>${quantity}</td><td><button onclick="showItemModal(itemAction.edit, ${id})">Edit</button></td>`;
     stockList.appendChild(row);
   }
 };
 
-const show_orders = async (filter) => {
+const showOrders = async (filter) => {
   filter = filter.trim();
 
   try {
@@ -134,13 +123,13 @@ const show_orders = async (filter) => {
 
     const orders = await res.json();
 
-    update_order_UI(orders);
+    updateOrderUI(orders);
   } catch (err) {
     alert(err);
   }
 };
 
-const update_order_UI = (orders) => {
+const updateOrderUI = (orders) => {
   const orderList = document.getElementById("orderList");
   orderList.innerHTML = "";
 
@@ -151,46 +140,46 @@ const update_order_UI = (orders) => {
   });
 };
 
-const delete_selected_stock = async () => {
+const deleteSelectedStock = async () => {
   const checkboxes = document.querySelectorAll(
     'input[type="checkbox"]:checked'
   );
-  const stock_ids = Array.from(checkboxes).map((item) => parseInt(item.id));
-  if (stock_ids.length === 0) return;
-  do_item_action(itemAction.delete, stock_ids);
+  const stockIds = Array.from(checkboxes).map((item) => parseInt(item.id));
+  if (stockIds.length === 0) return;
+  doItemAction(itemAction.delete, stockIds);
 };
 
-const show_item_modal = (mode, id) => {
+const showItemModal = (mode, id) => {
   const modal = document.getElementById("itemModal");
   modal.style.display = "block";
 
   const button = document.getElementById("submitItem");
   button.onclick =
-    mode === itemAction.edit ? () => submit_edited(id) : add_item;
+    mode === itemAction.edit ? () => submitEdited(id) : addItem;
 
   if (mode == itemAction.edit) {
-    display_item(id);
+    displayItem(id);
   }
 };
 
-const add_item = () => {
-  const item = item_from_form();
-  const image_input = document.getElementById("imageInput");
+const addItem = () => {
+  const item = itemFromForm();
+  const imageInput = document.getElementById("imageInput");
 
-  if (image_input.files.length > 0) {
-    uploadImage(image_input.files[0], item.title);
-    do_item_action(itemAction.add, item);
-    close_modal();
+  if (imageInput.files.length > 0) {
+    uploadImage(imageInput.files[0], item.title);
+    doItemAction(itemAction.add, item);
+    closeModal();
   } else {
     alert("U forgor a image :P");
   }
 };
 
-const display_item = async (item_id) => {
+const displayItem = async (itemId) => {
   if (stock.size === 0) {
-    app_error();
+    fail();
   }
-  const { title, kind, description, quantity } = stock[item_id];
+  const { title, kind, description, quantity } = stock[itemId];
 
   document.getElementById("title").value = title;
   document.getElementById("kind").value = kind;
@@ -202,7 +191,7 @@ const display_item = async (item_id) => {
   image.style.display = "block";
 };
 
-const item_from_form = () => {
+const itemFromForm = () => {
   const title = document.getElementById("title").value;
   const kind = document.getElementById("kind").value;
   const description = document.getElementById("description").value;
@@ -214,29 +203,35 @@ const item_from_form = () => {
     quantity: quantity,
   };
 
-  if (validate_item(item)) {
+  if (validateItem(item)) {
     return item;
   } else {
     alert("Pwease dubbo check ur input, somefing was wrong :P");
   }
 };
 
-const validate_item = ({ title, kind, description, quantity }) => {
-    return title && kind && description && quantity > -1 && typeof quantity === 'number';
-  };
-
-const submit_edited = (item_id) => {
-  const item = item_from_form();
-  const image_input = document.getElementById("imageInput");
-
-  do_item_action(itemAction.edit, item, item_id);
-  if (image_input.files.length === 1) uploadImage(image_input.files[0], title);
+const validateItem = ({ title, kind, description, quantity }) => {
+  return (
+    title &&
+    kind &&
+    description &&
+    quantity > -1 &&
+    typeof quantity === "number"
+  );
 };
 
-const do_item_action = async (action, body = null, id = null) => {
+const submitEdited = (itemId) => {
+  const item = itemFromForm();
+  const imageInput = document.getElementById("imageInput");
+
+  doItemAction(itemAction.edit, item, itemId);
+  if (imageInput.files.length === 1) uploadImage(imageInput.files[0], title);
+};
+
+const doItemAction = async (action, body = null, id = null) => {
   try {
-    let res = await fetch(action_to_url(action, id), {
-      method: action_to_method(action),
+    let res = await fetch(actionToUrl(action, id), {
+      method: actionToMethod(action),
       headers: {
         "Content-type": "application/json",
       },
@@ -245,48 +240,47 @@ const do_item_action = async (action, body = null, id = null) => {
 
     if (!res.ok) {
       throw new Error(
-        `Failed to ${action_to_str(action)} item(s): ${res.statusText}`
+        `Failed to ${actionToStr(action)} item(s): ${res.statusText}`
       );
     }
-    close_modal();
-    init_stock();
-    show_stock();
+    closeModal();
+    initStock();
+    showStock();
   } catch (err) {
     alert(err);
   }
 };
 
-const close_modal = () => {
+const closeModal = () => {
   const modal = document.getElementById("itemModal");
   modal.style.display = "none";
   const img = document.getElementById("image");
   img.style.display = "none";
   img.src = "";
   clear_modal();
-  clear_form();
+  clearForm();
 };
 
 const uploadImage = async (imageFile, title) => {
   const imgReader = new FileReader();
   imgReader.onload = async (event) => {
     try {
-        const data = new Uint8Array(event.target.result);
-        const res = await fetch(`/admin/upload_image/${title}`, {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/octet-stream',
-            },
-            body: data,
-          });
-        
-          if (!res.ok) {
-            throw new Error(`Unable to upload image: ${res.statusText}`)
-          }
+      const data = new Uint8Array(event.target.result);
+      const res = await fetch(`/admin/upload_image/${title}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
+        body: data,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Unable to upload image: ${res.statusText}`);
+      }
     } catch (err) {
-        console.error(err)
-        alert("Somefin went wong w the image :P")
+      console.error(err);
+      alert("Somefin went wong w the image :P");
     }
-    
   };
 
   imgReader.readAsArrayBuffer(imageFile);
@@ -299,7 +293,7 @@ const clear_modal = () => {
   document.getElementById("quantity").value = "";
 };
 
-const clear_form = () => {
+const clearForm = () => {
   const imageForm = document.getElementById("imageInput");
   const clone = imageForm.cloneNode(true);
 
@@ -308,4 +302,4 @@ const clear_form = () => {
   clone.value = "";
 };
 
-show_tab(tabState.stock);
+showTab(tabState.stock);

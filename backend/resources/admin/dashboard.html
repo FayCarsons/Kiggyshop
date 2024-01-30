@@ -19,17 +19,17 @@
       const tabState = {
         stock: 1,
         orders: 2,
-        readOnly: true,
       };
       Object.freeze(tabState);
     </script>
+    <script defer src="/admin/dashboard/dashboard.js"></script>
     <header>
       <h1>Dashboard</h1>
 
       <!-- Navigation Tabs -->
       <div>
-        <button onclick="show_tab(tabState.stock)">Stock</button>
-        <button onclick="show_tab(tabState.orders)">Orders</button>
+        <button onclick="showTab(tabState.stock)">Stock</button>
+        <button onclick="showTab(tabState.orders)">Orders</button>
       </div>
     </header>
 
@@ -51,8 +51,8 @@
           <!-- Stock items will be dynamically added here -->
         </tbody>
       </table>
-      <button onclick="delete_selected_stock()">Delete Selected</button>
-      <button onclick="show_item_modal('add', 0)">Add Item</button>
+      <button onclick="deleteSelectedStock()">Delete Selected</button>
+      <button onclick="showItemModal(itemAction.add, 0)">Add Item</button>
     </div>
 
     <!-- Orders Tab Content -->
@@ -85,7 +85,7 @@
     <!-- Item Modal -->
     <div id="itemModal" class="modal" style="display: none">
       <div class="modal-content">
-        <span class="close" onclick="close_modal()">&times;</span>
+        <span class="close" onclick="closeModal()">&times;</span>
         <label for="title">Title:</label>
         <input type="text" id="title" value="" required /><br />
         <label for="kind">Kind:</label>
@@ -111,6 +111,6 @@
         <button id="submitItem">Save</button>
       </div>
     </div>
-    <script src="/admin/dashboard/dashboard.js"></script>
+    
   </body>
 </html>

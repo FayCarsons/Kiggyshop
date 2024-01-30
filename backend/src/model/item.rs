@@ -11,7 +11,7 @@ pub struct InputItem {
 }
 
 impl From<Item> for InputItem {
-    fn from(Item { id, title, kind, description, quantity }: Item) -> Self {
+    fn from(Item { title, kind, description, quantity, .. }: Item) -> Self {
         Self {
             title, kind, description, quantity
         }
