@@ -6,6 +6,9 @@ mod api;
 mod env;
 mod error;
 mod stripe;
+mod utils;
+mod model;
+
 
 use actix_cors::Cors;
 use actix_session::{
@@ -14,8 +17,8 @@ use actix_session::{
     SessionMiddleware,
 };
 use admin::{
-    get_admin_dashboard, get_dashboard, get_style, login, post_admin_dashboard, post_dashboard,
-    try_login,
+    get_admin_dashboard, get_dashboard, get_js, get_style, login, post_admin_dashboard,
+    post_dashboard, try_login, upload_image,
 };
 use api::{
     order::get_orders,
@@ -37,7 +40,6 @@ use actix_web::{
 use diesel::{r2d2, SqliteConnection};
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
-const BIND: (&str, u16) = ("127.0.0.1", 8081);
 static ENV: OnceLock<Env> = OnceLock::new();
 
 fn session_middleware() -> SessionMiddleware<CookieSessionStore> {
@@ -53,8 +55,11 @@ fn session_middleware() -> SessionMiddleware<CookieSessionStore> {
 
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
-    dotenv::dotenv().ok();
+    dotenv::dotenv().expect("Cannot find .env");
     env_logger::init();
+
+    let port = std::env::var("BACKEND_PORT").map_err(|e| e.to_string()).and_then(|s| str::parse::<u16>(&s).map_err(|e| e.to_string())).expect("BACKEND_PORT either not present or not valid");
+    let bind = ("localhost", port);
 
     init_env()?;
 
@@ -97,7 +102,9 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(post_dashboard)
                     .service(get_admin_dashboard)
                     .service(post_admin_dashboard)
-                    .service(get_style),
+                    .service(get_style)
+                    .service(get_js)
+                    .service(upload_image),
             )
             .service(
                 web::scope("/api")
@@ -111,8 +118,9 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(webhook_handler)
                     .service(Files::new("/resources", "./resources").show_files_listing()),
             )
+            .service(webhook_handler)
     })
-    .bind(BIND)?
+    .bind(bind)?
     .run()
     .await
 }

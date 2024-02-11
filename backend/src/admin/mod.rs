@@ -1,4 +1,8 @@
-use std::fs::{self};
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+    path::Path,
+};
 
 use actix_session::Session;
 use actix_web::{
@@ -20,7 +24,7 @@ struct Password {
 
 fn get_session(session: &Session) -> ShopResult<bool> {
     match session.get::<bool>("admin-access") {
-        Ok(msg) => msg.map_or(Ok(false), |access| Ok(access)),
+        Ok(msg) => msg.map_or(Ok(false), Ok),
         Err(e) => Err(BackendError::ContentNotFound(e.to_string())),
     }
 }
@@ -87,4 +91,51 @@ pub async fn get_admin_dashboard() -> ShopResult<HttpResponse> {
 pub async fn get_style() -> ShopResult<HttpResponse> {
     let buffer = fs::read_to_string("./resources/admin/style.css")?;
     Ok(HttpResponse::Ok().content_type("text/css").body(buffer))
+}
+
+#[get("/dashboard/dashboard.js")]
+pub async fn get_js() -> ShopResult<HttpResponse> {
+    let buffer = fs::read_to_string("./resources/admin/dashboard.js")?;
+    Ok(HttpResponse::Ok()
+        .content_type("text/javascript")
+        .body(buffer))
+}
+
+const MAX_SIZE: usize = 1_000_000;
+#[post("/upload_image/{item_title}")]
+pub async fn upload_image(
+    mut payload: web::Payload,
+    item_title: web::Path<String>,
+) -> ShopResult<HttpResponse> {
+    use futures::StreamExt;
+
+    let path = format!(
+        "./resources/images/{}.png",
+        item_title.trim().replace(' ', "")
+    );
+    if Path::new(&path).exists() {
+        fs::remove_file(&path).unwrap();
+    }
+
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk?;
+        let curr_len = body.len() + chunk.len();
+        if curr_len > MAX_SIZE {
+            return Err(BackendError::BadRequest("overflow".to_string()));
+        }
+        body.extend_from_slice(&chunk);
+    }
+
+    let mut file = OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .append(true)
+        .open(path)?;
+    let res = match file.write_all(&body) {
+        Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
+        Ok(()) => HttpResponse::Ok().finish(),
+    };
+
+    Ok(res)
 }

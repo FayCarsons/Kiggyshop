@@ -1,13 +1,27 @@
 <!DOCTYPE html>
-
-
 <html>
-    <head>
-        <link data-trunk rel="css" href="./styles/output.css">
-        <link data-trunk rel="copy-dir" data-target-path="fonts" href="../backend/resources/fonts/">
-        <meta charset="utf-8" />
-        <title>KiggyPrint</title>
-		
-    </head>
-    <body></body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KiggyShop</title>
+    <link rel="stylesheet" href="out.css" />
+	<link rel="icon" type="image/png" href="images/logo.png"/>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { Elm } from './src/Main.elm'
+      const log = x => {
+        console.log(x);
+        return x
+      };
+      const app = Elm.Main.init({
+        node: document.getElementById("root"),
+        flags: localStorage.getItem("cart"),
+      });
+      app.ports.setCart.subscribe((cart) =>
+        localStorage.setItem("cart", JSON.stringify(cart))
+      );
+    </script>
+  </body>
 </html>

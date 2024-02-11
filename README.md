@@ -1,8 +1,6 @@
-# printshop
-Rust fullstack webshop 
+# Printshop
+Elm frontend, Rust backend via Actix with Diesel+Sqlite DB
 
-Actix backend, Yew frontend, with some basic HTML/CSS/JS for admin page.
+Running requires all ofthe above + Clojure's 'Babashka' runtime for dev scripts
 
-Requires Rust, Diesel CLI, Trunk, Sqlite3, Clojure + Babashka, Rust target wasm32-unknown-unknown
-
-TODO: add complete instructions to run.
+WIP - rough around the edges. Will add full instructions to build + run 

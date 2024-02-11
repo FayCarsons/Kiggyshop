@@ -1,18 +1,22 @@
-- DONE - FIX FRONTEND ERROR - likely cause by common dependencies that require 
-    diesel/libsqlite which probably doesn't compile to wasm or whatever
+# ADMIN
+- add order editing on admin page
+- test auth for admin dashboard
+- get real data in DBs - depends on owner
+- more control over orders - add tracking #
 
-- ASYNC STRIPE - implment stripe payments w Rust async stripe crate && stripe account
-  
-- DONE - Create cart && checkout page
-  
-- Emails to both cutsomer && owner whenever an order is placed
-- 
-- make pretty - tailwind? yes setup tailwind
-- 
-- finish admin page for viewing orders/editing products
-- get real data in DBs - up to owner
-- DONE ON BACKEND - Error handling: replace calls to unwrap with actual error handling
-- Set up some form of exponential backoff on the frontend 
+# BACKEND
+- Error handling: replace any calls to unwrap with propagation up call stack
+- Implement nightly(3am) Backups for DB, save current stock and orders to JSON file
+- Tracking URL
+- refund policy 
+- returns 
+- sales tax
 
-- DONE - Refactor Carts + Items, instead of HashMap of Item -> Quantity should be ItemId(i32)  -> quantity(u32)
-- DONE - Fix cookies
+# FRONTEND
+- research benefits of and potentially set up exponential backoff for frontend API requests
+- Finish Navbar 
+
+# Stripe 
+- Collect phone, email, any relevant info in case of error
+- Set up taxes
+- Test order insertion in DB

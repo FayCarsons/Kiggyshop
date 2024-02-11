@@ -1,7 +1,7 @@
-use common::{
+use crate::model::{
     item::{InputItem, Item, NewItem},
-    schema::stock::{self, id},
-    StockMap,
+    schema::stock,
+    ItemId,
 };
 
 use actix_web::{
@@ -9,21 +9,24 @@ use actix_web::{
     web::{self, Path},
     HttpResponse,
 };
+use r2d2::PooledConnection;
 use serde_json::to_string;
-use std::fs;
+use std::{collections::HashMap, fs};
 
-use diesel::prelude::*;
+use diesel::{prelude::*, r2d2::ConnectionManager};
 
 use crate::{
     error::{BackendError, ShopResult},
     DbPool, ENV,
 };
 
-pub async fn item_from_db(item_id: i32, pool: &web::Data<DbPool>) -> ShopResult<Item> {
+pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> ShopResult<Item> {
+    use crate::model::schema::stock::id;
+
     let mut conn = pool.get().unwrap();
     web::block(move || -> ShopResult<Item> {
         Ok(stock::table
-            .filter(id.eq(item_id))
+            .filter(id.eq(item_id as i32))
             .select(Item::as_select())
             .get_result(&mut conn)?)
     })
@@ -31,7 +34,7 @@ pub async fn item_from_db(item_id: i32, pool: &web::Data<DbPool>) -> ShopResult<
 }
 
 #[get("/stock/get_single/{item_id}")]
-pub async fn get_item(item_id: Path<i32>, pool: web::Data<DbPool>) -> ShopResult<web::Json<Item>> {
+pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> ShopResult<web::Json<Item>> {
     let item_id = item_id.into_inner();
     let item: Item = item_from_db(item_id, &pool).await?;
 
@@ -50,12 +53,12 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
     .await
     .map_err(|e| BackendError::FileReadError(e.to_string()))?;
 
-    let hm: StockMap = stock
-        .iter()
-        .map(|item| (item.id, item.clone()))
-        .collect::<StockMap>();
-
-    let ser = to_string(&hm)?;
+    let stock = HashMap::<i32, InputItem>::from_iter(
+        stock
+            .into_iter()
+            .map(|item| (item.id, InputItem::from(item))),
+    );
+    let ser = to_string(&stock)?;
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -94,6 +97,8 @@ pub async fn update_item(
     new_fields: web::Json<InputItem>,
     pool: web::Data<DbPool>,
 ) -> ShopResult<HttpResponse> {
+    use crate::model::schema::stock::id;
+
     let item_id = item_id.into_inner();
     let InputItem {
         title,
@@ -127,7 +132,7 @@ pub async fn delete_stock(
     pool: web::Data<DbPool>,
     item_ids: web::Json<Vec<i32>>,
 ) -> ShopResult<HttpResponse> {
-    use common::schema::stock::*;
+    use crate::model::schema::stock::*;
     let item_ids = item_ids.into_inner();
 
     web::block(move || -> ShopResult<()> {
@@ -156,12 +161,34 @@ pub fn init_stock() -> Result<(), BackendError> {
         })
         .collect();
 
+    let db_url = &ENV.get().cloned().unwrap_or_default().database_url;
     let mut conn =
-        SqliteConnection::establish(&ENV.get().cloned().unwrap_or_default().database_url)
-            .map_err(|e| BackendError::DbError(e.to_string()))?;
+        SqliteConnection::establish(db_url).map_err(|e| BackendError::DbError(e.to_string()))?;
+
     diesel::insert_into(stock::table)
         .values(ins)
         .execute(&mut conn)?;
+
+    Ok(())
+}
+
+pub async fn dec_items(
+    items: Vec<(i32, i32)>,
+    mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
+) -> ShopResult<()> {
+    use crate::model::schema::stock::{id, quantity};
+
+    web::block(move || -> ShopResult<()> {
+        for (item_id, qty) in items {
+            println!("Item: {item_id}{qty}");
+
+            diesel::update(stock::table.filter(id.eq(item_id)))
+                .set(quantity.eq(quantity - qty))
+                .execute(&mut conn)?;
+        }
+        Ok(())
+    })
+    .await??;
 
     Ok(())
 }
