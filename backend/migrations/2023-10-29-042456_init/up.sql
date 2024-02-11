@@ -1,4 +1,3 @@
--- Your SQL goes here
 CREATE TABLE IF NOT EXISTS stock (
         id INTEGER PRIMARY KEY NOT NULL,
         title TEXT NOT NULL UNIQUE,
@@ -11,7 +10,7 @@ CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY NOT NULL,
     name TEXT NOT NULL, 
     street TEXT NOT NULL,
-    zipcode INTEGER NOT NULL,
+    zipcode TEXT NOT NULL,
     fulfilled BOOLEAN NOT NULL
 );
 

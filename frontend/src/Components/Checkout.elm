@@ -4,7 +4,7 @@ import Cart exposing (Cart)
 import Html exposing (Html, a, button, div, h2, img, p, span, text)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
-import Lib exposing (getItemQuantityPairs, getQuantityElement, getTotal, postCheckout, titleToPath)
+import Lib exposing (getItemQuantityPairs, getQuantityElement, getTotal, titleToPath)
 import Messages as Msg exposing (Msg)
 import Stock exposing (Product, Stock, ItemId)
 

@@ -1,5 +1,18 @@
 use super::Order;
 use diesel::prelude::*;
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct JsonCart {
+    item:  i32,
+    qty: i32
+}
+
+impl From<JsonCart> for (i32, i32) {
+    fn from(JsonCart { item, qty }: JsonCart) -> Self {
+        (item, qty)
+    }
+}
 
 
 #[derive(Queryable, Selectable, Associations, Identifiable)]
@@ -13,7 +26,7 @@ pub struct DbCart {
 }
 
 
-#[derive(Insertable, Clone)]
+#[derive(Insertable, Clone, Deserialize)]
 #[diesel(table_name = super::schema::carts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewCart {

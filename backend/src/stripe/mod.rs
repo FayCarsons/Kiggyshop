@@ -196,7 +196,7 @@ async fn handle_checkout(
         address.line1.unwrap_or_default(),
         address.line2.unwrap_or_default()
     );
-    let zipcode = address.postal_code.unwrap_or_default().parse::<i32>()?;
+    let zipcode = address.postal_code.unwrap_or_default();
     let name = name.unwrap_or_default();
 
     // Collecting user cart from session metadata

@@ -131,8 +131,7 @@ pub async fn upload_image(
         .create_new(true)
         .write(true)
         .append(true)
-        .open(path)
-        .unwrap();
+        .open(path)?;
     let res = match file.write_all(&body) {
         Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
         Ok(()) => HttpResponse::Ok().finish(),

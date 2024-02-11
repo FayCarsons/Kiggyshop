@@ -1,12 +1,11 @@
-use actix_web::{
-    post,
-    web::{self, Path},
-    HttpResponse,
-};
 use crate::model::{
     cart::NewCart,
-    order::{NewOrder, Order, OrderFilter},
-    schema::orders::{self, fulfilled},
+    order::{JsonOrder, NewOrder, Order, OrderFilter},
+};
+use actix_web::{
+    delete, post,
+    web::{self, Path},
+    HttpResponse,
 };
 use diesel::{prelude::*, r2d2::ConnectionManager};
 use r2d2::PooledConnection;
@@ -18,6 +17,7 @@ pub async fn get_orders(
     pool: web::Data<DbPool>,
     filter: Path<OrderFilter>,
 ) -> ShopResult<HttpResponse> {
+    use crate::model::schema::orders;
     let filter = filter.into_inner();
 
     let orders = web::block(move || -> ShopResult<Vec<Order>> {
@@ -29,11 +29,11 @@ pub async fn get_orders(
                 .get_results(&mut conn)?,
             OrderFilter::Fulfilled => orders::table
                 .select(Order::as_select())
-                .filter(fulfilled.eq(true))
+                .filter(orders::fulfilled.eq(true))
                 .get_results(&mut conn)?,
             OrderFilter::Unfulfilled => orders::table
                 .select(Order::as_select())
-                .filter(fulfilled.eq(false))
+                .filter(orders::fulfilled.eq(false))
                 .get_results(&mut conn)?,
         };
         Ok(res)
@@ -44,20 +44,49 @@ pub async fn get_orders(
     Ok(HttpResponse::Ok().content_type("text/json").body(json))
 }
 
+#[delete("/orders/{id}")]
+pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<HttpResponse> {
+    use crate::model::schema::orders;
+    let id = id.into_inner();
+
+    let res: ShopResult<()> = web::block(move || {
+        let mut conn = pool.get()?;
+        Ok(orders::table
+            .select(Order::as_select())
+            .filter(crate::model::schema::orders::id.eq(id))
+            .get_result(&mut conn)
+            .map(|_| ())?)
+    })
+    .await?;
+
+    Ok(res.map(|_| HttpResponse::Ok().finish())?)
+}
+
+#[post("/orders")]
+pub async fn post_order(pool: web::Data<DbPool>, body: web::Json<JsonOrder>) -> ShopResult<HttpResponse> {
+    let JsonOrder { name, street, zipcode, cart , .. } = body.into_inner();
+    let cart = cart.into_iter().map(<(i32, i32)>::from).collect::<Vec<(i32, i32)>>();
+    let conn = pool.get()?;
+
+    insert_order(conn, cart, name, street, zipcode).await?;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
 pub async fn insert_order(
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
     cart: Vec<(i32, i32)>,
     name: String,
     street: String,
-    zipcode: i32,
+    zipcode: String,
 ) -> ShopResult<()> {
     web::block(move || -> ShopResult<()> {
-        use crate::model::schema::carts;
+        use crate::model::schema::{carts, orders};
 
         let order = NewOrder {
             name: &name,
             street: &street,
-            zipcode,
+            zipcode: &zipcode,
             fulfilled: false,
         };
 
@@ -81,5 +110,5 @@ pub async fn insert_order(
         Ok(())
     })
     .await
-    .expect("CRASHED WHILE INSERTING ORDER INTO DB")
+    .expect("Failure while inserting order into DB")
 }

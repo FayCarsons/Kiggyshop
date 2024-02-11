@@ -1,38 +1,15 @@
 use serde::{Deserialize, Serialize};
 use diesel::prelude::*;
-use super::item::Item;
-use std::collections::HashMap;
+use super::cart::JsonCart;
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct CheckoutCart {
-    pub inner: HashMap<Item, u32>,
-}
-/* 
-impl CheckoutCart {
-    pub fn from_ctx(stock: &StockMap, cart: &CartMap) -> Self {
-        let res = cart
-            .iter()
-            .map(|(id, qty)| {
-                let item = stock.get(id).unwrap();
-                let item = Item::from(item);
-
-                (item.clone(), *qty)
-            })
-            .collect::<HashMap<Item, u32>>();
-
-        Self { inner: res }
-    }
-}
-*/
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsonOrder {
     pub name: String,
     pub street: String,
-    pub zipcode: i32,
+    pub zipcode: String,
     pub total: i32,
     pub fulfilled: bool,
-}
+    pub cart: Vec<JsonCart>}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Queryable, Selectable, Identifiable)]
 #[diesel(table_name = super::schema::orders)]
@@ -41,7 +18,7 @@ pub struct Order {
     pub id: i32,
     pub name: String,
     pub street: String,
-    pub zipcode: i32,
+    pub zipcode: String,
     pub fulfilled: bool,
 }
 
@@ -51,7 +28,7 @@ pub struct Order {
 pub struct NewOrder<'a> {
     pub name: &'a str,
     pub street: &'a str,
-    pub zipcode: i32,
+    pub zipcode: &'a str,
     pub fulfilled: bool,
 }
 
