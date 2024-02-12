@@ -1,18 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use std::{
-        fs::{self, File},
-        num,
-    };
+    use std::fs::{self};
 
-    use diesel::{
-        dsl::count, query_dsl::methods::SelectDsl, QueryDsl, RunQueryDsl, SelectableHelper,
-    };
+    use diesel::{dsl::count, query_dsl::methods::SelectDsl, RunQueryDsl};
 
     use crate::{
         model::{
             cart::{JsonCart, NewCart},
-            item::{InputItem, Item, NewItem},
+            item::{InputItem, NewItem},
             order::{JsonOrder, NewOrder},
         },
         tests::test_db,
@@ -76,8 +71,7 @@ mod tests {
     #[test]
     fn insert_stock() {
         use crate::schema::stock::{self, id};
-        let stock = fs::read_to_string("stock.json")
-            .unwrap();
+        let stock = fs::read_to_string("stock.json").unwrap();
         let stock: Vec<InputItem> = serde_json::from_str(&stock).unwrap();
 
         let num_items = stock.len();
@@ -94,9 +88,9 @@ mod tests {
                      description,
                      quantity,
                  }| NewItem {
-                    title: &title,
-                    kind: &kind,
-                    description: &description,
+                    title: title,
+                    kind: kind,
+                    description: description,
                     quantity: *quantity,
                 },
             )

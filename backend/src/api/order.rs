@@ -59,7 +59,7 @@ pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<
     })
     .await?;
 
-    Ok(res.map(|_| HttpResponse::Ok().finish())?)
+    res.map(|_| HttpResponse::Ok().finish())
 }
 
 #[post("/orders")]

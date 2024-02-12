@@ -1,4 +1,4 @@
-use diesel::{sql_query, Connection, RunQueryDsl, SqliteConnection};
+use diesel::{Connection, SqliteConnection};
 use std::{path::PathBuf, sync::atomic::AtomicU32};
 
 static TEST_DB_COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -24,7 +24,7 @@ impl TestDb {
         println!("DB PATH: {:?}", path);
         std::fs::File::create(&path).unwrap();
         let migration = std::process::Command::new("diesel")
-            .args(&[
+            .args([
                 "migration",
                 "run",
                 "--database-url",
@@ -51,6 +51,10 @@ impl TestDb {
         let sqconn = SqliteConnection::establish(self.path.to_str().unwrap());
         assert!(sqconn.is_ok());
         diesel_logger::LoggingConnection::new(sqconn.unwrap())
+    }
+
+    pub fn path(&self) -> PathBuf {
+        self.path.clone()
     }
 }
 

@@ -5,6 +5,7 @@ mod error;
 mod model;
 mod schema;
 mod stripe;
+#[cfg(test)]
 mod tests;
 mod utils;
 
