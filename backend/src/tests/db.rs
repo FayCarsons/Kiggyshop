@@ -29,8 +29,8 @@ mod tests {
         conn.connection();
     }
 
-    #[actix_web::test]
-    async fn insert_order() {
+    #[test]
+    fn insert_order() {
         let order = JsonOrder {
             name: String::from("William Burroughs"),
             street: String::from("3616 E Broad st, Richond, VA"),
@@ -73,8 +73,8 @@ mod tests {
         assert!(insert.is_ok())
     }
 
-    #[actix_web::test]
-    async fn insert_stock() {
+    #[test]
+    fn insert_stock() {
         use crate::schema::stock::{self, id};
         let stock = fs::read_to_string("stock.json")
             .unwrap();
