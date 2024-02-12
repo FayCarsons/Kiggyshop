@@ -13,21 +13,20 @@ pub struct Env {
 }
 
 pub fn init_env() -> ShopResult<()> {
-    ENV.get_or_try_init(|| -> ShopResult<Env> {
-        let stripe_secret_key = std::env::var("STRIPE_SECRET_KEY")?;
-        let init_db = std::env::var("INIT_DB")?
-            .parse::<bool>()
-            .map_err(|e| BackendError::EnvError(e.to_string()))?;
-        let admin_pass = std::env::var("ADMIN_PASS")?;
-        let database_url = std::env::var("DATABASE_URL")?;
-        let completion_redirect = std::env::var("COMPLETION_REDIRECT")?;
-        Ok(Env {
+    ENV.get_or_init(|| {
+        let stripe_secret_key = std::env::var("STRIPE_SECRET_KEY").expect("Stripe secret not set!");
+        let init_db = std::env::var("INIT_DB").unwrap_or_default()
+            .parse::<bool>().unwrap();
+        let admin_pass = std::env::var("ADMIN_PASS").expect("Admin pass not set!");
+        let database_url = std::env::var("DATABASE_URL").expect("Database URL not set!");
+        let completion_redirect = std::env::var("COMPLETION_REDIRECT").expect("Success page URL not set!");
+        Env {
             init_db,
             admin_pass,
             database_url,
             stripe_secret_key,
             completion_redirect,
-        })
-    })?;
+        }
+    });
     Ok(())
 }

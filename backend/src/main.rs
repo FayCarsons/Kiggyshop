@@ -1,6 +1,3 @@
-#![feature(once_cell_try)]
-#![feature(async_closure)]
-
 mod admin;
 mod api;
 mod env;
