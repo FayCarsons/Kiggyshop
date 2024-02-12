@@ -92,6 +92,35 @@ mod tests {
 
         assert_eq!(crate::schema::orders::table.filter(crate::schema::orders::fulfilled.eq(true)).count().first(&mut conn), Ok(1));  
     }
+
+    #[test]
+    fn test_delete_order() {
+        let JsonOrder { name, street, zipcode, .. } = serde_json::from_str(include_str!("./mock_order.json")).expect("Cannot open mock order");
+
+        let db = test_db::TestDb::new();
+        let mut conn = db.connection();
+
+        use crate::schema::orders;
+
+        let inserted_id = diesel::insert_into(orders::table)
+            .values(&NewOrder {
+                name: &name,
+                street: &street,
+                zipcode: &zipcode,
+                fulfilled: false,
+            })
+            .returning(orders::dsl::id)
+            .get_result::<i32>(&mut conn);
+
+        assert!(inserted_id.is_ok());
+        assert_eq!(inserted_id, Ok(1));
+        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
+
+        let res = diesel::delete(crate::schema::orders::table).execute(&mut conn); 
+        assert!(res.is_ok());
+
+        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(0));  
+    }
     
     #[test]
     fn insert_stock() {
