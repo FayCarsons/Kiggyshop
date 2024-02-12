@@ -18,7 +18,10 @@ type alias Product =
     , quantity : Int
     }
 
-type alias ItemId = Int
+
+type alias ItemId =
+    Int
+
 
 type alias Stock =
     Dict ItemId Product
@@ -65,7 +68,7 @@ stockDecoder =
                 let
                     addPair : ( String, Product ) -> JD.Decoder Stock -> JD.Decoder Stock
                     addPair ( k, v ) decoder =
-                        case (String.toInt k) of
+                        case String.toInt k of
                             Just key ->
                                 JD.map (Dict.insert key v) decoder
 

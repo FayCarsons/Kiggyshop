@@ -6,7 +6,7 @@ import Html exposing (Html, p, text)
 import Html.Attributes as Attr
 import Http
 import Messages as Msg
-import Stock exposing (Product, Stock,ItemId)
+import Stock exposing (ItemId, Product, Stock)
 
 
 inc : number -> number
@@ -69,14 +69,14 @@ getQuantityElement qty =
         text ""
 
 
-getItemQuantityPairs : Cart -> Stock -> List ( (ItemId, Product), Cart.Quantity )
+getItemQuantityPairs : Cart -> Stock -> List ( ( ItemId, Product ), Cart.Quantity )
 getItemQuantityPairs cart stock =
-    Dict.toList cart |> List.filterMap (\(id, qty) -> Dict.get id stock |> Maybe.andThen (\item -> Just ((id, item), qty)))
+    Dict.toList cart |> List.filterMap (\( id, qty ) -> Dict.get id stock |> Maybe.andThen (\item -> Just ( ( id, item ), qty )))
 
 
 getTotal : Cart -> Stock -> Int
 getTotal cart stock =
-    Dict.toList cart |> List.filterMap (\(id, qty) -> Dict.get id stock |> Maybe.andThen (\{kind} -> Just <| Stock.kindToPrice kind * qty)) |> List.sum
+    Dict.toList cart |> List.filterMap (\( id, qty ) -> Dict.get id stock |> Maybe.andThen (\{ kind } -> Just <| Stock.kindToPrice kind * qty)) |> List.sum
 
 
 postCheckout : Cart -> Cmd Msg.Msg

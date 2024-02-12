@@ -8,7 +8,7 @@ import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Lib exposing (getQuantityElement, titleToPath)
 import Messages as Msg exposing (Msg)
-import Stock exposing (Product, ItemId)
+import Stock exposing (ItemId, Product)
 
 
 product : ItemId -> Product -> Msg.Menu -> Html Msg
