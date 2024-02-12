@@ -11,6 +11,7 @@ import Messages as Msg
 import Stock exposing (ItemId, Product, Stock)
 
 
+
 gallery : Stock -> Msg.Menu -> Html Msg.Msg
 gallery stock menu =
     div []

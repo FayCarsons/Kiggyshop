@@ -10,6 +10,7 @@ import Components.Loading exposing (errorPage, loadingPage)
 import Components.Product exposing (product)
 import Dict
 import Html exposing (Html, text)
+import Html.Lazy
 import Http
 import Json.Decode as JD
 import Json.Encode as JE
@@ -250,7 +251,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case model of
         Failure ->
-            ( Failure, Cmd.none )
+            ( Failure, Nav.reload )
 
         Success { page } ->
             matchMsg msg model page
@@ -281,22 +282,18 @@ matchPage : AppState -> Html Msg
 matchPage ({ page } as state) =
     case page.route of
         Gallery ->
-            gallery state.shop.stock state.view
+            Html.Lazy.lazy2 gallery state.shop.stock state.view
 
-        Item id ->
-            let
-                maybeProduct =
-                    Dict.get id state.shop.stock
-            in
-            case maybeProduct of
+        Item id ->                        
+            case Dict.get id state.shop.stock of
                 Just item ->
-                    product id item state.view
+                    Html.Lazy.lazy3 product id item state.view
 
                 Nothing ->
                     errorPage ()
 
         Checkout ->
-            checkout state.shop
+            Html.Lazy.lazy checkout state.shop
 
         About ->
             text "Unimplemented!"

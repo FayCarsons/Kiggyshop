@@ -3,7 +3,7 @@ module Components.Dropdown exposing (..)
 import Components.Icons exposing (Palette(..), burger)
 import Html exposing (Html, a, div, text)
 import Html.Attributes as Attr
-import Html.Events exposing (onClick)
+{- import Html.Events exposing (onClick) -}
 import Messages exposing (Msg(..), Route(..))
 
 
