@@ -19,4 +19,6 @@ env_logger = "0.10.0"
 dotenv = "0.15.0"
 async-stripe = {version = "0.25.2", features = ["runtime-tokio-hyper"]}
 futures = "0.3.29"
+url = "2.5.0"
+diesel_logger = "0.3.0"
 

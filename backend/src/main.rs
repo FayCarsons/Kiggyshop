@@ -5,10 +5,11 @@ mod admin;
 mod api;
 mod env;
 mod error;
-mod stripe;
-mod utils;
 mod model;
-
+mod schema;
+mod stripe;
+mod tests;
+mod utils;
 
 use actix_cors::Cors;
 use actix_session::{
@@ -58,7 +59,10 @@ async fn main() -> Result<(), std::io::Error> {
     dotenv::dotenv().expect("Cannot find .env");
     env_logger::init();
 
-    let port = std::env::var("BACKEND_PORT").map_err(|e| e.to_string()).and_then(|s| str::parse::<u16>(&s).map_err(|e| e.to_string())).expect("BACKEND_PORT either not present or not valid");
+    let port = std::env::var("BACKEND_PORT")
+        .map_err(|e| e.to_string())
+        .and_then(|s| str::parse::<u16>(&s).map_err(|e| e.to_string()))
+        .expect("BACKEND_PORT either not present or not valid");
     let bind = ("localhost", port);
 
     init_env()?;

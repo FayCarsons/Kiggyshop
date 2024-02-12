@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use diesel::prelude::*;
 use super::cart::JsonCart;
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsonOrder {
@@ -8,11 +8,13 @@ pub struct JsonOrder {
     pub street: String,
     pub zipcode: String,
     pub total: i32,
-    pub fulfilled: bool,
-    pub cart: Vec<JsonCart>}
+    pub cart: Vec<JsonCart>,
+}
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Queryable, Selectable, Identifiable)]
-#[diesel(table_name = super::schema::orders)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Queryable, Selectable, Identifiable,
+)]
+#[diesel(table_name = crate::schema::orders)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Order {
     pub id: i32,
@@ -23,7 +25,7 @@ pub struct Order {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = super::schema::orders)]
+#[diesel(table_name = crate::schema::orders)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewOrder<'a> {
     pub name: &'a str,

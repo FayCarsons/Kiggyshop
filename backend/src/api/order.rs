@@ -17,7 +17,7 @@ pub async fn get_orders(
     pool: web::Data<DbPool>,
     filter: Path<OrderFilter>,
 ) -> ShopResult<HttpResponse> {
-    use crate::model::schema::orders;
+    use crate::schema::orders;
     let filter = filter.into_inner();
 
     let orders = web::block(move || -> ShopResult<Vec<Order>> {
@@ -46,14 +46,14 @@ pub async fn get_orders(
 
 #[delete("/orders/{id}")]
 pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<HttpResponse> {
-    use crate::model::schema::orders;
+    use crate::schema::orders;
     let id = id.into_inner();
 
     let res: ShopResult<()> = web::block(move || {
         let mut conn = pool.get()?;
         Ok(orders::table
             .select(Order::as_select())
-            .filter(crate::model::schema::orders::id.eq(id))
+            .filter(crate::schema::orders::id.eq(id))
             .get_result(&mut conn)
             .map(|_| ())?)
     })
@@ -63,9 +63,21 @@ pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<
 }
 
 #[post("/orders")]
-pub async fn post_order(pool: web::Data<DbPool>, body: web::Json<JsonOrder>) -> ShopResult<HttpResponse> {
-    let JsonOrder { name, street, zipcode, cart , .. } = body.into_inner();
-    let cart = cart.into_iter().map(<(i32, i32)>::from).collect::<Vec<(i32, i32)>>();
+pub async fn post_order(
+    pool: web::Data<DbPool>,
+    body: web::Json<JsonOrder>,
+) -> ShopResult<HttpResponse> {
+    let JsonOrder {
+        name,
+        street,
+        zipcode,
+        cart,
+        ..
+    } = body.into_inner();
+    let cart = cart
+        .into_iter()
+        .map(<(i32, i32)>::from)
+        .collect::<Vec<(i32, i32)>>();
     let conn = pool.get()?;
 
     insert_order(conn, cart, name, street, zipcode).await?;
@@ -81,7 +93,7 @@ pub async fn insert_order(
     zipcode: String,
 ) -> ShopResult<()> {
     web::block(move || -> ShopResult<()> {
-        use crate::model::schema::{carts, orders};
+        use crate::schema::{carts, orders};
 
         let order = NewOrder {
             name: &name,

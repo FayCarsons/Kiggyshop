@@ -1,11 +1,11 @@
 use std::{borrow::Borrow, collections::HashMap, num::ParseIntError};
 
+use crate::model::{item::Item, ItemId, Quantity};
 use actix_web::{
     post,
     web::{self, Json},
     HttpRequest, HttpResponse,
 };
-use crate::model::{item::Item, ItemId, Quantity};
 
 use stripe::{
     Client, CreatePaymentLink, CreatePaymentLinkAfterCompletion,
@@ -30,7 +30,10 @@ use crate::{
 };
 
 #[post("/checkout")]
-pub async fn checkout(cart: Json<HashMap<ItemId, Quantity>>, pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
+pub async fn checkout(
+    cart: Json<HashMap<ItemId, Quantity>>,
+    pool: web::Data<DbPool>,
+) -> ShopResult<HttpResponse> {
     let mut item_map = HashMap::<Item, u32>::new();
     for (id, qty) in cart.iter() {
         let item = item_from_db(*id, &pool).await?;

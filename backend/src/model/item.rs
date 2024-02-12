@@ -11,15 +11,28 @@ pub struct InputItem {
 }
 
 impl From<Item> for InputItem {
-    fn from(Item { title, kind, description, quantity, .. }: Item) -> Self {
+    fn from(
+        Item {
+            title,
+            kind,
+            description,
+            quantity,
+            ..
+        }: Item,
+    ) -> Self {
         Self {
-            title, kind, description, quantity
+            title,
+            kind,
+            description,
+            quantity,
         }
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, Hash,Queryable, Selectable)]
-#[diesel(table_name = super::schema::stock)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, Queryable, Selectable,
+)]
+#[diesel(table_name = crate::schema::stock)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Item {
     pub id: i32,
@@ -43,7 +56,7 @@ impl Item {
 }
 
 #[derive(Insertable, AsChangeset)]
-#[diesel(table_name = super::schema::stock)]
+#[diesel(table_name = crate::schema::stock)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewItem<'a> {
     pub title: &'a str,

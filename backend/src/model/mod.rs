@@ -1,7 +1,6 @@
 pub mod cart;
 pub mod item;
 pub mod order;
-pub mod schema;
 
 use order::Order;
 

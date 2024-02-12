@@ -1,7 +1,9 @@
-use crate::model::{
-    item::{InputItem, Item, NewItem},
+use crate::{
+    model::{
+        item::{InputItem, Item, NewItem},
+        ItemId,
+    },
     schema::stock,
-    ItemId,
 };
 
 use actix_web::{
@@ -21,7 +23,7 @@ use crate::{
 };
 
 pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> ShopResult<Item> {
-    use crate::model::schema::stock::id;
+    use crate::schema::stock::id;
 
     let mut conn = pool.get().unwrap();
     web::block(move || -> ShopResult<Item> {
@@ -97,7 +99,7 @@ pub async fn update_item(
     new_fields: web::Json<InputItem>,
     pool: web::Data<DbPool>,
 ) -> ShopResult<HttpResponse> {
-    use crate::model::schema::stock::id;
+    use crate::schema::stock::id;
 
     let item_id = item_id.into_inner();
     let InputItem {
@@ -132,7 +134,7 @@ pub async fn delete_stock(
     pool: web::Data<DbPool>,
     item_ids: web::Json<Vec<i32>>,
 ) -> ShopResult<HttpResponse> {
-    use crate::model::schema::stock::*;
+    use crate::schema::stock::*;
     let item_ids = item_ids.into_inner();
 
     web::block(move || -> ShopResult<()> {
@@ -176,7 +178,7 @@ pub async fn dec_items(
     items: Vec<(i32, i32)>,
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
 ) -> ShopResult<()> {
-    use crate::model::schema::stock::{id, quantity};
+    use crate::schema::stock::{id, quantity};
 
     web::block(move || -> ShopResult<()> {
         for (item_id, qty) in items {

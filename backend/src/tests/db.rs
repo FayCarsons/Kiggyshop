@@ -1,18 +1,18 @@
 #[cfg(test)]
 mod tests {
-    use diesel::RunQueryDsl;
+    use std::{fs::{self, File}, num};
+
+    use diesel::{dsl::count, query_dsl::methods::SelectDsl, QueryDsl, RunQueryDsl, SelectableHelper};
 
     use crate::{
         model::{
-            cart::{JsonCart, NewCart},
-            order::{JsonOrder, NewOrder},
+            cart::{JsonCart, NewCart}, item::{InputItem, Item, NewItem}, order::{JsonOrder, NewOrder}
         },
         tests::test_db,
     };
 
     #[test]
     fn create_db() {
-        println!("Creating a database");
         let _ = test_db::TestDb::new();
     }
 
@@ -64,5 +64,37 @@ mod tests {
             .execute(&mut conn);
 
         assert!(insert.is_ok())
+    }
+
+    #[actix_web::test]
+    async fn insert_stock() {
+        use crate::schema::stock::{self, id};
+        let stock = fs::read_to_string("/Users/fay/Desktop/Code/Rust/printshop/backend/stock.json").unwrap();
+        let stock: Vec<InputItem> = serde_json::from_str(&stock).unwrap();
+
+        let num_items = stock.len();
+        
+        let db = test_db::TestDb::new();
+        let mut conn = db.connection();
+
+        let ins: Vec<NewItem> = stock
+            .iter()
+            .map(|InputItem { title, kind, description, quantity }| NewItem {
+                title: &title,
+                kind: &kind,
+                description: &description,
+                quantity: *quantity,
+            })
+            .collect();
+    
+        let res = diesel::insert_into(stock::table)
+            .values(ins)
+            .execute(&mut conn);
+
+        assert!(res.is_ok());
+
+        let res =SelectDsl::select(stock::table, count(id)).get_result::<i64>(&mut conn);
+        assert!(res.is_ok());
+        assert_eq!(num_items, res.unwrap() as usize);
     }
 }
