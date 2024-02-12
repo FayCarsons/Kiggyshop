@@ -3,12 +3,11 @@ use crate::model::{
     order::{JsonOrder, NewOrder, Order, OrderFilter},
 };
 use actix_web::{
-    delete, post,
-    web::{self, Path},
-    HttpResponse,
+    body::BoxBody, delete, post, web::{self, Json, Path}, HttpResponse
 };
 use diesel::{prelude::*, r2d2::ConnectionManager};
 use r2d2::PooledConnection;
+use serde::{Deserialize, Serialize};
 
 use crate::{error::ShopResult, DbPool};
 
@@ -48,18 +47,23 @@ pub async fn get_orders(
 pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<HttpResponse> {
     use crate::schema::orders;
     let id = id.into_inner();
+    let mut conn = pool.get()?;
 
-    let res: ShopResult<()> = web::block(move || {
-        let mut conn = pool.get()?;
-        Ok(orders::table
-            .select(Order::as_select())
-            .filter(crate::schema::orders::id.eq(id))
-            .get_result(&mut conn)
-            .map(|_| ())?)
+    web::block(move || -> ShopResult<()> {
+        match diesel::delete(orders::table.filter(orders::id.eq(id))).execute(&mut conn) {
+            Ok(_) => (),
+            Err(e) => {eprintln!("DATABASE ERROR: {e}"); panic!()}
+        }
+        Ok(())
     })
-    .await?;
+    .await??;
 
-    res.map(|_| HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderId {
+    pub id: i32
 }
 
 #[post("/orders")]
@@ -74,15 +78,16 @@ pub async fn post_order(
         cart,
         ..
     } = body.into_inner();
+
     let cart = cart
         .into_iter()
         .map(<(i32, i32)>::from)
         .collect::<Vec<(i32, i32)>>();
     let conn = pool.get()?;
+    let id = insert_order(conn, cart, name, street, zipcode).await?;
+    let id = OrderId { id };
 
-    insert_order(conn, cart, name, street, zipcode).await?;
-
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().content_type("application/json").json(id))
 }
 
 pub async fn insert_order(
@@ -91,8 +96,8 @@ pub async fn insert_order(
     name: String,
     street: String,
     zipcode: String,
-) -> ShopResult<()> {
-    web::block(move || -> ShopResult<()> {
+) -> ShopResult<i32> {
+    web::block(move || -> ShopResult<i32> {
         use crate::schema::{carts, orders};
 
         let order = NewOrder {
@@ -119,7 +124,7 @@ pub async fn insert_order(
         diesel::insert_into(carts::table)
             .values(&new_carts)
             .execute(&mut conn)?;
-        Ok(())
+        Ok(inserted_id)
     })
     .await
     .expect("Failure while inserting order into DB")

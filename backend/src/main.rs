@@ -20,7 +20,7 @@ use admin::{
     post_dashboard, try_login, upload_image,
 };
 use api::{
-    order::get_orders,
+    order::{delete_order, get_orders, post_order},
     stock::{delete_stock, get_item, get_stock, init_stock, put_item, update_item},
 };
 use env::{init_env, Env};
@@ -112,6 +112,8 @@ async fn main() -> Result<(), std::io::Error> {
                 web::scope("/api")
                     .service(get_stock)
                     .service(get_orders)
+                    .service(post_order)
+                    .service(delete_order)
                     .service(update_item)
                     .service(get_item)
                     .service(put_item)

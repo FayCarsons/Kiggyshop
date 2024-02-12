@@ -28,10 +28,10 @@ mod tests {
     fn insert_order() {
         let order = JsonOrder {
             name: String::from("William Burroughs"),
-            street: String::from("3616 E Broad st, Richond, VA"),
+            street: String::from("2323 E Broad st, Richond, VA"),
             zipcode: String::from("23223"),
             total: 108,
-            cart: vec![JsonCart { item: 0, qty: 4 }],
+            cart: vec![JsonCart { item: 0, qty: 4 }, JsonCart { item: 1, qty: 2 }, ],
         };
 
         let db = test_db::TestDb::new();

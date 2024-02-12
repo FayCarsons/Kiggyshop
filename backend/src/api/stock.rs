@@ -53,13 +53,12 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
             .expect("CANNOT GET STOCK FROM DB")
     })
     .await
-    .map_err(|e| BackendError::FileReadError(e.to_string()))?;
+    .map_err(|e| BackendError::DbError(e.to_string()))?;
 
-    let stock = HashMap::<i32, InputItem>::from_iter(
-        stock
-            .into_iter()
-            .map(|item| (item.id, InputItem::from(item))),
-    );
+    let stock = stock
+        .into_iter()
+        .map(|item| (item.id, InputItem::from(item)))
+        .collect::<HashMap<i32, InputItem>>();
     let ser = to_string(&stock)?;
 
     Ok(HttpResponse::Ok()

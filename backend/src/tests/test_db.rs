@@ -19,8 +19,8 @@ impl TestDb {
             TEST_DB_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
         );
 
-        let mut path = PathBuf::from(&name);
-        path.set_extension(".sqlite");
+        let path = PathBuf::from(&format!("{name}.sqlite"));
+
         println!("DB PATH: {:?}", path);
         std::fs::File::create(&path).unwrap();
         let migration = std::process::Command::new("diesel")
