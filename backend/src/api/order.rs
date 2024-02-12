@@ -3,7 +3,9 @@ use crate::model::{
     order::{JsonOrder, NewOrder, Order, OrderFilter},
 };
 use actix_web::{
-    body::BoxBody, delete, post, web::{self, Json, Path}, HttpResponse
+    delete, post,
+    web::{self, Path},
+    HttpResponse,
 };
 use diesel::{prelude::*, r2d2::ConnectionManager};
 use r2d2::PooledConnection;
@@ -52,7 +54,10 @@ pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<
     web::block(move || -> ShopResult<()> {
         match diesel::delete(orders::table.filter(orders::id.eq(id))).execute(&mut conn) {
             Ok(_) => (),
-            Err(e) => {eprintln!("DATABASE ERROR: {e}"); panic!()}
+            Err(e) => {
+                eprintln!("DATABASE ERROR: {e}");
+                panic!()
+            }
         }
         Ok(())
     })
@@ -63,7 +68,7 @@ pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderId {
-    pub id: i32
+    pub id: i32,
 }
 
 #[post("/orders")]

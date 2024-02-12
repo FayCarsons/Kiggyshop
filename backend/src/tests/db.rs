@@ -2,7 +2,7 @@
 mod tests {
     use std::fs::{self};
 
-    use diesel::{dsl::count, query_dsl::methods::SelectDsl, RunQueryDsl};
+    use diesel::{dsl::count, query_dsl::methods::SelectDsl, QueryDsl, RunQueryDsl};
 
     use crate::{
         model::{
@@ -26,13 +26,7 @@ mod tests {
 
     #[test]
     fn insert_order() {
-        let order = JsonOrder {
-            name: String::from("William Burroughs"),
-            street: String::from("2323 E Broad st, Richond, VA"),
-            zipcode: String::from("23223"),
-            total: 108,
-            cart: vec![JsonCart { item: 0, qty: 4 }, JsonCart { item: 1, qty: 2 }, ],
-        };
+        let JsonOrder { name, street, zipcode, ref cart, .. } = serde_json::from_str(include_str!("./mock_order.json")).expect("Cannot open mock order");
 
         let db = test_db::TestDb::new();
         let mut conn = db.connection();
@@ -41,23 +35,24 @@ mod tests {
 
         let inserted_id = diesel::insert_into(orders::table)
             .values(&NewOrder {
-                name: &order.name,
-                street: &order.street,
-                zipcode: &order.zipcode,
+                name: &name,
+                street: &street,
+                zipcode: &zipcode,
                 fulfilled: false,
             })
             .returning(orders::dsl::id)
             .get_result::<i32>(&mut conn);
 
         assert!(inserted_id.is_ok());
+        assert_eq!(inserted_id, Ok(1));
+        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
 
-        let new_carts = order
-            .cart
+        let new_carts = cart
             .into_iter()
             .map(|JsonCart { item, qty }| NewCart {
                 order_id: *inserted_id.as_ref().unwrap(),
-                item_id: item,
-                quantity: qty,
+                item_id: *item,
+                quantity: *qty,
             })
             .collect::<Vec<NewCart>>();
 
@@ -65,9 +60,10 @@ mod tests {
             .values(&new_carts)
             .execute(&mut conn);
 
-        assert!(insert.is_ok())
+        assert!(insert.is_ok());
+        assert_eq!(crate::schema::carts::table.count().first::<i64>(&mut conn), Ok(cart.len() as i64));
     }
-
+    
     #[test]
     fn insert_stock() {
         use crate::schema::stock::{self, id};

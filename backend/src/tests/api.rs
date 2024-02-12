@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use diesel::{helper_types::Order, r2d2::ConnectionManager, QueryDsl, RunQueryDsl, SelectableHelper};
+    use diesel::{r2d2::ConnectionManager, QueryDsl, RunQueryDsl};
     use std::{collections::HashMap, fs};
 
     use actix_web::{test, web, App};
@@ -8,7 +8,10 @@ mod tests {
 
     use crate::{
         admin::upload_image,
-        api::{order::{self, delete_order}, stock::get_stock},
+        api::{
+            order::{self, delete_order},
+            stock::get_stock,
+        },
         model::{
             item::{InputItem, NewItem},
             order::{JsonOrder, NewOrder},
@@ -88,7 +91,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(pool))
-                .service(order::post_order)
+                .service(order::post_order),
         )
         .await;
 
@@ -109,13 +112,31 @@ mod tests {
         let (db, pool) = create_db_pool();
 
         // Dummy order
-        let JsonOrder { name, street, zipcode, total, cart } = serde_json::from_str::<JsonOrder>(include_str!("./mock_order.json"))
+        let JsonOrder {
+            name,
+            street,
+            zipcode,
+            ..
+        } = serde_json::from_str::<JsonOrder>(include_str!("./mock_order.json"))
             .expect("Cannot deserialize mock order");
 
         let mut conn = db.connection();
-        diesel::insert_into(crate::schema::orders::table).values([NewOrder { name: &name, street: &street, zipcode: &zipcode, fulfilled: false }]).execute(&mut conn).expect("Cannot insert ock order into DB");
+        diesel::insert_into(crate::schema::orders::table)
+            .values([NewOrder {
+                name: &name,
+                street: &street,
+                zipcode: &zipcode,
+                fulfilled: false,
+            }])
+            .execute(&mut conn)
+            .expect("Cannot insert ock order into DB");
 
-        let app = test::init_service(App::new().service(delete_order).app_data(web::Data::new(pool))).await;
+        let app = test::init_service(
+            App::new()
+                .service(delete_order)
+                .app_data(web::Data::new(pool)),
+        )
+        .await;
         let req = test::TestRequest::delete().uri("/orders/1").to_request();
         let response = test::call_service(&app, req).await;
         assert!(response.status().is_success());
