@@ -76,7 +76,7 @@ mod tests {
     #[actix_web::test]
     async fn insert_stock() {
         use crate::schema::stock::{self, id};
-        let stock = fs::read_to_string("/Users/fay/Desktop/Code/Rust/printshop/backend/stock.json")
+        let stock = fs::read_to_string("stock.json")
             .unwrap();
         let stock: Vec<InputItem> = serde_json::from_str(&stock).unwrap();
 
