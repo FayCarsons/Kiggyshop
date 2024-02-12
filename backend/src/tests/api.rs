@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use diesel::{r2d2::ConnectionManager, RunQueryDsl};
+    use diesel::{helper_types::Order, r2d2::ConnectionManager, QueryDsl, RunQueryDsl, SelectableHelper};
     use std::{collections::HashMap, fs};
 
     use actix_web::{test, web, App};
@@ -8,11 +8,10 @@ mod tests {
 
     use crate::{
         admin::upload_image,
-        api::{order, stock::get_stock},
+        api::{order::{self, delete_order}, stock::get_stock},
         model::{
-            cart::JsonCart,
-            item::{InputItem, Item, NewItem},
-            order::JsonOrder,
+            item::{InputItem, NewItem},
+            order::{JsonOrder, NewOrder},
             ItemId,
         },
         tests::test_db,
@@ -75,11 +74,11 @@ mod tests {
             .expect("Cannot deserialize body");
     }
 
-    // #[actix_web::test]
+    #[actix_web::test]
     // Not working - for soe reason FS is locked for second call
-    async fn _test_insert_delete_order() {
+    async fn test_insert_order() {
         // Initialize test double DB and get connection pool
-        let (_, pool) = create_db_pool();
+        let (db, pool) = create_db_pool();
 
         // Dummy order
         let order = serde_json::from_str::<JsonOrder>(include_str!("./mock_order.json"))
@@ -90,7 +89,6 @@ mod tests {
             App::new()
                 .app_data(web::Data::new(pool))
                 .service(order::post_order)
-                .service(order::delete_order),
         )
         .await;
 
@@ -102,16 +100,28 @@ mod tests {
         // Make request to `post_order`
         test::call_service(&app, req).await;
 
-        // Build new request to `delete_order` with received order id
-        let req = test::TestRequest::delete()
-            .uri("/orders/1")
-            .to_request();
-        // Send request and verify success
+        let mut conn = db.connection();
+        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1))
+    }
+
+    #[actix_web::test]
+    async fn test_delete_order() {
+        let (db, pool) = create_db_pool();
+
+        // Dummy order
+        let JsonOrder { name, street, zipcode, total, cart } = serde_json::from_str::<JsonOrder>(include_str!("./mock_order.json"))
+            .expect("Cannot deserialize mock order");
+
+        let mut conn = db.connection();
+        diesel::insert_into(crate::schema::orders::table).values([NewOrder { name: &name, street: &street, zipcode: &zipcode, fulfilled: false }]).execute(&mut conn).expect("Cannot insert ock order into DB");
+
+        let app = test::init_service(App::new().service(delete_order).app_data(web::Data::new(pool))).await;
+        let req = test::TestRequest::delete().uri("/orders/1").to_request();
         let response = test::call_service(&app, req).await;
-        println!("{:?}", response.status());
         assert!(response.status().is_success());
 
-        // TODO: assert DB contains no orders
+        let mut conn = db.connection();
+        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(0))
     }
 
     #[actix_web::test]
