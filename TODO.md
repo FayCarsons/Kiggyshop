@@ -11,6 +11,7 @@
 - refund policy 
 - returns 
 - sales tax
+- improve test coverage: read, update, delete for DB, everything for Actix
 
 # FRONTEND
 - research benefits of and potentially set up exponential backoff for frontend API requests

@@ -1,6 +1,6 @@
 # Printshop
-Elm frontend, Rust backend via Actix with Diesel+Sqlite DB
+Elm frontend, Rust backend via Actix with Sqlite DB managed with Diesel ORM/query builder
 
-Running requires all ofthe above + Clojure's 'Babashka' runtime for dev scripts
+Running requires all ofthe above + Clojure's 'Babashka' runtime if you want to run dev scripts.
 
-WIP - rough around the edges. Will add full instructions to build + run 
+Aiming for a release in Q1 2024.

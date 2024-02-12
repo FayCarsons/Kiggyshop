@@ -101,7 +101,7 @@ pub async fn get_js() -> ShopResult<HttpResponse> {
         .body(buffer))
 }
 
-const MAX_SIZE: usize = 1_000_000;
+const MAX_SIZE: usize = 10_000_000;
 #[post("/upload_image/{item_title}")]
 pub async fn upload_image(
     mut payload: web::Payload,

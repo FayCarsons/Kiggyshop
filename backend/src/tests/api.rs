@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use diesel::r2d2::ConnectionManager;
-    use std::collections::HashMap;
+    use std::{collections::HashMap, fs};
 
     use actix_web::{
         body::MessageBody,
@@ -13,8 +13,7 @@ mod tests {
     use diesel::SqliteConnection;
 
     use crate::{
-        api::stock::get_stock,
-        model::{item::Item, ItemId}, tests::test_db,
+        admin::upload_image, api::stock::get_stock, model::{item::Item, ItemId}, tests::test_db
     };
 
     #[actix_web::test]
@@ -31,5 +30,15 @@ mod tests {
             test::init_service(App::new().app_data(web::Data::new(pool)).service(get_stock)).await;
         let req = test::TestRequest::get().uri("/stock/get").to_request();
         let _: HashMap<ItemId, Item> = test::call_and_read_body_json(&app, req).await;
+    }
+
+    #[actix_web::test]
+    async fn test_image_upload() {
+        let image = include_bytes!("./cat.png");
+        let app = test::init_service(App::new().service(upload_image)).await;
+        let req = test::TestRequest::post().set_payload(image.to_vec()).uri("/upload_image/test").to_request();
+        let response = test::call_service(&app, req).await;
+        assert!(response.status().is_success());
+        fs::remove_file("resources/images/test.png").unwrap();
     }
 }
