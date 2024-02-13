@@ -2,7 +2,10 @@
 mod tests {
     use std::fs::{self};
 
-    use diesel::{dsl::count, query_dsl::methods::SelectDsl, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
+    use diesel::{
+        dsl::count, query_dsl::methods::SelectDsl, ExpressionMethods, QueryDsl, RunQueryDsl,
+        SelectableHelper,
+    };
 
     use crate::{
         model::{
@@ -26,7 +29,14 @@ mod tests {
 
     #[test]
     fn insert_order() {
-        let JsonOrder { name, street, zipcode, ref cart, .. } = serde_json::from_str(include_str!("./mock_order.json")).expect("Cannot open mock order");
+        let JsonOrder {
+            name,
+            street,
+            zipcode,
+            ref cart,
+            ..
+        } = serde_json::from_str(include_str!("./mock_order.json"))
+            .expect("Cannot open mock order");
 
         let db = test_db::TestDb::new();
         let mut conn = db.connection();
@@ -61,12 +71,21 @@ mod tests {
             .execute(&mut conn);
 
         assert!(insert.is_ok());
-        assert_eq!(crate::schema::carts::table.count().first::<i64>(&mut conn), Ok(cart.len() as i64));
+        assert_eq!(
+            crate::schema::carts::table.count().first::<i64>(&mut conn),
+            Ok(cart.len() as i64)
+        );
     }
 
     #[test]
     fn test_update_order() {
-        let JsonOrder { name, street, zipcode, .. } = serde_json::from_str(include_str!("./mock_order.json")).expect("Cannot open mock order");
+        let JsonOrder {
+            name,
+            street,
+            zipcode,
+            ..
+        } = serde_json::from_str(include_str!("./mock_order.json"))
+            .expect("Cannot open mock order");
 
         let db = test_db::TestDb::new();
         let mut conn = db.connection();
@@ -87,15 +106,31 @@ mod tests {
         assert_eq!(inserted_id, Ok(1));
         assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
 
-        let res = diesel::update(crate::schema::orders::table.filter(crate::schema::orders::id.eq(inserted_id.unwrap()))).set(crate::schema::orders::fulfilled.eq(true)).execute(&mut conn); 
+        let res = diesel::update(
+            crate::schema::orders::table.filter(crate::schema::orders::id.eq(inserted_id.unwrap())),
+        )
+        .set(crate::schema::orders::fulfilled.eq(true))
+        .execute(&mut conn);
         assert!(res.is_ok());
 
-        assert_eq!(crate::schema::orders::table.filter(crate::schema::orders::fulfilled.eq(true)).count().first(&mut conn), Ok(1));  
+        assert_eq!(
+            crate::schema::orders::table
+                .filter(crate::schema::orders::fulfilled.eq(true))
+                .count()
+                .first(&mut conn),
+            Ok(1)
+        );
     }
 
     #[test]
     fn test_delete_order() {
-        let JsonOrder { name, street, zipcode, .. } = serde_json::from_str(include_str!("./mock_order.json")).expect("Cannot open mock order");
+        let JsonOrder {
+            name,
+            street,
+            zipcode,
+            ..
+        } = serde_json::from_str(include_str!("./mock_order.json"))
+            .expect("Cannot open mock order");
 
         let db = test_db::TestDb::new();
         let mut conn = db.connection();
@@ -116,12 +151,12 @@ mod tests {
         assert_eq!(inserted_id, Ok(1));
         assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
 
-        let res = diesel::delete(crate::schema::orders::table).execute(&mut conn); 
+        let res = diesel::delete(crate::schema::orders::table).execute(&mut conn);
         assert!(res.is_ok());
 
-        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(0));  
+        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(0));
     }
-    
+
     #[test]
     fn insert_stock() {
         use crate::schema::stock::{self, id};

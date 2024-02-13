@@ -4,8 +4,8 @@ import Cart exposing (Cart)
 import Html exposing (Html, a, button, div, h2, img, p, span, text)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
-import Html.Lazy
 import Html.Keyed
+import Html.Lazy
 import Lib exposing (getItemQuantityPairs, getQuantityElement, getTotal, titleToPath)
 import Messages as Msg exposing (Msg)
 import Stock exposing (ItemId, Product, Stock)
@@ -19,7 +19,8 @@ checkout { stock, cart } =
                 [ h2 [ Attr.class "text-2xl font-semibold mb-4" ] [ text "cart" ]
 
                 -- Products in cart
-                , Html.Keyed.node "div" [ Attr.class "space-y-4" ]
+                , Html.Keyed.node "div"
+                    [ Attr.class "space-y-4" ]
                     (getItemQuantityPairs cart stock |> List.filter (\( _, qty ) -> qty > 0) |> List.map keyedCartItem)
 
                 -- Total and checkout section
@@ -37,9 +38,11 @@ checkout { stock, cart } =
             ]
         ]
 
-keyedCartItem : ( (ItemId, Product), Cart.Quantity ) -> (String, Html Msg)
-keyedCartItem ((( id, _), _) as args) = 
-    (String.fromInt id, Html.Lazy.lazy cartItem args)
+
+keyedCartItem : ( ( ItemId, Product ), Cart.Quantity ) -> ( String, Html Msg )
+keyedCartItem (( ( id, _ ), _ ) as args) =
+    ( String.fromInt id, Html.Lazy.lazy cartItem args )
+
 
 cartItem : ( ( ItemId, Product ), Cart.Quantity ) -> Html Msg
 cartItem ( ( id, { title, kind, quantity } ), qty ) =

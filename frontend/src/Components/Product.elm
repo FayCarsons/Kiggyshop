@@ -19,7 +19,7 @@ product id item menu =
         , div [ Attr.class "flex flex-col min-h-screen" ]
             [ header Msg.FlipMenu menu
             , productPage id item
-            , Html.Lazy.lazy Dropdown.dropdown { showMenu = menu, click = Just Msg.FlipMenu, class = Dropdown.rightDropdownClass }                    
+            , Html.Lazy.lazy Dropdown.dropdown { showMenu = menu, click = Just Msg.FlipMenu, class = Dropdown.rightDropdownClass }
             ]
         ]
 

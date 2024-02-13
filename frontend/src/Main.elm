@@ -284,7 +284,7 @@ matchPage ({ page } as state) =
         Gallery ->
             Html.Lazy.lazy2 gallery state.shop.stock state.view
 
-        Item id ->                        
+        Item id ->
             case Dict.get id state.shop.stock of
                 Just item ->
                     Html.Lazy.lazy3 product id item state.view
