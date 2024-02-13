@@ -1,0 +1,69 @@
+name: Rust and Elm CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  Rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: |
+          cd backend && 
+          cargo build --verbose
+
+      - name: Run tests
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y libsqlite3-dev &&
+          cargo install diesel_cli --no-default-features --features sqlite &&
+          cd backend && 
+          cargo test --verbose
+
+  Elm: 
+    runs-on: ubuntu-latest
+
+    defaults:
+      run: 
+        working-directory: frontend
+
+    steps: 
+      - uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.17.0'
+
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: node_modules-${{ hashFiles('package.json', 'package-lock.json') }}
+
+      - name: Validate elm
+        run: el --version
+
+      - name: Cache ~/.elm
+        uses: actions/cache@v3
+        with: 
+          path: ~/.elm
+          key: elm-${{ hashFiles('elm.json', 'elm-tooling.json') }}
+
+      - name: npm ci 
+        if: steps.cache-node_modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: elm-tooling install
+        run: npx elm-tooling install
+
+      - name: elm test
+        run: npx elm-test
