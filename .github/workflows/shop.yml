@@ -65,7 +65,7 @@ jobs:
         run: npx elm-tooling install
 
       - name: Validate elm
-        run: elm --version
+        run: npx elm --version
 
       - name: elm test
         run: npx elm-test
