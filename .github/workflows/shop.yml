@@ -50,7 +50,7 @@ jobs:
           key: node_modules-${{ hashFiles('package.json', 'package-lock.json') }}
 
       - name: Validate elm
-        run: el --version
+        run: elm --version
 
       - name: Cache ~/.elm
         uses: actions/cache@v3
