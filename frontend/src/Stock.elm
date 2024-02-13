@@ -24,7 +24,7 @@ type alias ItemId =
 
 
 type alias Stock =
-    Dict ItemId Product
+    Dict Int Product
 
 
 type alias StockResult =

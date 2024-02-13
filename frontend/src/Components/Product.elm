@@ -6,6 +6,7 @@ import Components.Header exposing (header)
 import Html exposing (Html, button, div, h1, img, p, text)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
+import Html.Lazy
 import Lib exposing (getQuantityElement, titleToPath)
 import Messages as Msg exposing (Msg)
 import Stock exposing (ItemId, Product)
@@ -14,16 +15,11 @@ import Stock exposing (ItemId, Product)
 product : ItemId -> Product -> Msg.Menu -> Html Msg
 product id item menu =
     div [ Attr.class "relative flex min-h-screen bg-slate-50" ]
-        [ Dropdown.dropdown { click = Nothing, class = Dropdown.leftDropdownClass }
+        [ Dropdown.dropdown { showMenu = Msg.Open, click = Nothing, class = Dropdown.leftDropdownClass }
         , div [ Attr.class "flex flex-col min-h-screen" ]
             [ header Msg.FlipMenu menu
             , productPage id item
-            , case menu of
-                Msg.Open ->
-                    text ""
-
-                Msg.Closed ->
-                    Dropdown.dropdown { click = Just Msg.FlipMenu, class = Dropdown.rightDropdownClass }
+            , Html.Lazy.lazy Dropdown.dropdown { showMenu = menu, click = Just Msg.FlipMenu, class = Dropdown.rightDropdownClass }                    
             ]
         ]
 

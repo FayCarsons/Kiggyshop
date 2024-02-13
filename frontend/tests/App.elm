@@ -7,8 +7,6 @@ import Json.Decode exposing (decodeString)
 import Stock exposing (stockDecoder)
 import Test exposing (..)
 import Stock exposing (kindDecoder)
-import Html.Attributes exposing (kind)
-import Stock exposing (ProductKind)
 import Stock exposing (kindToPrice)
 
 
