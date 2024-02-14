@@ -1,6 +1,7 @@
 module Components.Checkout exposing (..)
 
 import Cart exposing (Cart)
+import Components.Icons exposing (Palette(..), home)
 import Html exposing (Html, a, button, div, h2, img, p, span, text)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
@@ -14,7 +15,9 @@ import Stock exposing (ItemId, Product, Stock)
 checkout : { stock : Stock, cart : Cart } -> Html Msg
 checkout { stock, cart } =
     div [ Attr.class "absolute min-h-screen top-0 right-0 left-0 min-w-screen bg-gradient-to-b from-kiggypink to-kiggyred" ]
-        [ div [ Attr.class "container w-3/4 mx-auto my-8  bg-slate-50" ]
+        [ a [ Attr.href "/", Attr.class "aboslute flex flex-row justify-center items-center w-10 h-10" ] 
+            [ home { click = Nothing, class = "m-2 blur-0 transition duration-300 ease-in-out hover:blur-[1px]", size = "24", color = White } ]
+        , div [ Attr.class "container w-3/4 mx-auto my-8  bg-slate-50" ]
             [ div [ Attr.class "p-8 rounded-md shadow-md" ]
                 [ h2 [ Attr.class "text-2xl font-semibold mb-4" ] [ text "cart" ]
 

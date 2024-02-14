@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-export const content = ["/Users/fay/Desktop/Code/elm/gallery/src/elm.js"];
+export const content = ["./src/**/*.elm"];
 export const theme = {
   extend: {
     colors: {

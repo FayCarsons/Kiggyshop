@@ -11,10 +11,6 @@
     <div id="root"></div>
     <script type="module">
       import { Elm } from './src/Main.elm'
-      const log = x => {
-        console.log(x);
-        return x
-      };
       const app = Elm.Main.init({
         node: document.getElementById("root"),
         flags: localStorage.getItem("cart"),

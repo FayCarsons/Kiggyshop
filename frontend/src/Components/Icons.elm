@@ -136,3 +136,8 @@ mail { click, class, size, color } =
             ]
     in
     svgWrapper { click = click, class = class, size = size, fill = Nothing, stroke = Just color, children = children }
+
+home : SvgProps msg -> Svg msg 
+home { click, class, size, color } = 
+    let children = [ path [ Attr.d "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"] [], polyline [ Attr.points "9 22 9 12 15 12 15 22" ] [] ] in
+    svgWrapper { click = click, class = class, size = size, fill = Nothing, stroke = Just color, children = children }
