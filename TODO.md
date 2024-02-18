@@ -16,6 +16,7 @@
 # FRONTEND
 - research benefits of and potentially set up exponential backoff for frontend API requests
 - Finish Navbar 
+- 
 
 # Stripe 
 - Collect phone, email, any relevant info in case of error

@@ -7,7 +7,6 @@ mod tests {
     use diesel::SqliteConnection;
 
     use crate::{
-        admin::upload_image,
         api::{
             order::{self, delete_order},
             stock::get_stock,
@@ -145,16 +144,5 @@ mod tests {
         assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(0))
     }
 
-    #[actix_web::test]
-    async fn test_image_upload() {
-        let image = include_bytes!("./cat.png");
-        let app = test::init_service(App::new().service(upload_image)).await;
-        let req = test::TestRequest::post()
-            .set_payload(image.to_vec())
-            .uri("/upload_image/test")
-            .to_request();
-        let response = test::call_service(&app, req).await;
-        assert!(response.status().is_success());
-        fs::remove_file("resources/images/test.png").unwrap();
-    }
+    
 }

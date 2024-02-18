@@ -1,0 +1,1 @@
+fn() -> HttpResponseBuilder {actix_web::response::http_codes::<impl HttpResponse>::InternalServerError}
