@@ -1,7 +1,6 @@
 #![feature(once_cell_try)]
 mod api;
 mod env;
-mod error;
 mod model;
 mod schema;
 mod stripe;

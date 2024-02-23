@@ -1,6 +1,5 @@
 use std::{borrow::Borrow, collections::HashMap, num::ParseIntError};
 
-use crate::model::{item::Item, ItemId, Quantity};
 use actix_web::{
     error, post,
     web::{self, Json},
@@ -24,7 +23,7 @@ use crate::{
         order::insert_order,
         stock::{dec_items, item_from_db},
     },
-    error::{BackendError},
+    model::{item::Item, ItemId, Quantity},
     utils::print_red,
     DbPool, ENV,
 };
@@ -172,7 +171,7 @@ pub async fn parse_webhook(
     })?;
 
     let payload_str = std::str::from_utf8(payload.borrow())
-        .map_err(|e| BackendError::PaymentError(e.to_string()))?;
+        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     let stripe_sig = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
 
