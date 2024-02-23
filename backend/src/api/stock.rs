@@ -7,9 +7,9 @@ use crate::{
 };
 
 use actix_web::{
-    delete, get, put,
+    delete, error, get, put,
     web::{self, Path},
-    HttpResponse,
+    HttpResponse, Result,
 };
 use r2d2::PooledConnection;
 use serde_json::to_string;
@@ -18,25 +18,26 @@ use std::{collections::HashMap, fs};
 use diesel::{prelude::*, r2d2::ConnectionManager};
 
 use crate::{
-    error::{BackendError, ShopResult},
     DbPool, ENV,
 };
 
-pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> ShopResult<Item> {
+pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> Result<Item> {
     use crate::schema::stock::id;
 
     let mut conn = pool.get().unwrap();
-    web::block(move || -> ShopResult<Item> {
-        Ok(stock::table
+    web::block(move || -> std::result::Result<Item, &str> {
+        stock::table
             .filter(id.eq(item_id as i32))
             .select(Item::as_select())
-            .get_result(&mut conn)?)
+            .get_result(&mut conn)
+            .map_err(|_| "cannot fetch item from DB")
     })
     .await?
+    .map_err(error::ErrorInternalServerError)
 }
 
 #[get("/stock/get_single/{item_id}")]
-pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> ShopResult<web::Json<Item>> {
+pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> Result<web::Json<Item>> {
     let item_id = item_id.into_inner();
     let item: Item = item_from_db(item_id, &pool).await?;
 
@@ -44,16 +45,16 @@ pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> ShopResult
 }
 
 #[get("/stock/get")]
-pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
-    let stock: Vec<Item> = web::block(move || {
-        let mut conn = pool.get().expect("couldn't get db connection");
+pub async fn get_stock(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let stock: Vec<Item> = web::block(move || -> std::result::Result<Vec<Item>, &str> {
+        let mut conn = pool.get().map_err(|_| "couldn't get db connection")?;
         stock::table
             .select(Item::as_select())
             .get_results(&mut conn)
-            .expect("CANNOT GET STOCK FROM DB")
+            .map_err(|_| "Cannot fetch stock from DB")
     })
-    .await
-    .map_err(|e| BackendError::DbError(e.to_string()))?;
+    .await?
+    .map_err(error::ErrorInternalServerError)?;
 
     let stock = stock
         .into_iter()
@@ -67,10 +68,7 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> ShopResult<HttpResponse> {
 }
 
 #[put("/stock/add")]
-pub async fn put_item(
-    pool: web::Data<DbPool>,
-    item: web::Json<InputItem>,
-) -> ShopResult<HttpResponse> {
+pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<InputItem>) -> Result<HttpResponse> {
     let item = item.into_inner();
 
     web::block(move || {
@@ -81,13 +79,17 @@ pub async fn put_item(
             quantity: item.quantity,
         };
 
-        let mut conn = pool.get().expect("CANNOT GET DB CONNECTION");
-        diesel::insert_into(stock::table)
+        let mut conn = pool.get().map_err(|_| "Cannot connect to DB")?;
+        match diesel::insert_into(stock::table)
             .values(item)
             .execute(&mut conn)
-            .map(|_| ())
+        {
+            Ok(_) => Ok(()),
+            Err(_) => Err("Cannot insert item into stock table"),
+        }
     })
-    .await??;
+    .await?
+    .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -97,7 +99,7 @@ pub async fn update_item(
     item_id: Path<i32>,
     new_fields: web::Json<InputItem>,
     pool: web::Data<DbPool>,
-) -> ShopResult<HttpResponse> {
+) -> Result<HttpResponse> {
     use crate::schema::stock::id;
 
     let item_id = item_id.into_inner();
@@ -108,7 +110,7 @@ pub async fn update_item(
         quantity,
     } = new_fields.into_inner();
 
-    web::block(move || -> ShopResult<()> {
+    web::block(move || {
         let new_item = NewItem {
             title: &title,
             kind: &kind,
@@ -116,14 +118,19 @@ pub async fn update_item(
             quantity,
         };
 
-        let mut conn = pool.get()?;
-        Ok(diesel::update(stock::dsl::stock)
+        let mut conn = pool.get().map_err(|_| "Cannot connect to DB".to_string())?;
+        match diesel::update(stock::dsl::stock)
             .filter(id.eq(item_id))
             .set(new_item)
             .execute(&mut conn)
-            .map(|_| ())?)
+            .map(|_| ())
+        {
+            Ok(_) => Ok(()),
+            Err(_) => Err(format!("Cannot update item {item_id}")),
+        }
     })
-    .await??;
+    .await?
+    .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -132,23 +139,26 @@ pub async fn update_item(
 pub async fn delete_stock(
     pool: web::Data<DbPool>,
     item_ids: web::Json<Vec<i32>>,
-) -> ShopResult<HttpResponse> {
+) -> Result<HttpResponse> {
     use crate::schema::stock::*;
     let item_ids = item_ids.into_inner();
 
-    web::block(move || -> ShopResult<()> {
-        let mut conn = pool.get()?;
-        diesel::delete(stock::table.filter(id.eq_any(item_ids))).execute(&mut conn)?;
-        Ok(())
+    web::block(move || {
+        let mut conn = pool.get().map_err(|_| "Cannot connect to DB")?;
+        match diesel::delete(stock::table.filter(id.eq_any(item_ids))).execute(&mut conn) {
+            Ok(_) => Ok(()),
+            Err(_) => Err("Cannot delete items from DB"),
+        }
     })
-    .await??;
+    .await?
+    .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().finish())
 }
 
 /// Only needed if DB does not have stock.
 /// Requires env var `INIT_DB=TRUE` to run
-pub fn init_stock() -> Result<(), BackendError> {
+pub fn init_stock() -> Result<()> {
     let buffer = fs::read_to_string("stock.json")?;
 
     let de = serde_json::from_str::<Vec<InputItem>>(&buffer)?;
@@ -163,12 +173,13 @@ pub fn init_stock() -> Result<(), BackendError> {
         .collect();
 
     let db_url = &ENV.get().cloned().unwrap_or_default().database_url;
-    let mut conn =
-        SqliteConnection::establish(db_url).map_err(|e| BackendError::DbError(e.to_string()))?;
+    let mut conn = SqliteConnection::establish(db_url)
+        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     diesel::insert_into(stock::table)
         .values(ins)
-        .execute(&mut conn)?;
+        .execute(&mut conn)
+        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     Ok(())
 }
@@ -176,20 +187,22 @@ pub fn init_stock() -> Result<(), BackendError> {
 pub async fn dec_items(
     items: Vec<(i32, i32)>,
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
-) -> ShopResult<()> {
+) -> Result<()> {
     use crate::schema::stock::{id, quantity};
 
-    web::block(move || -> ShopResult<()> {
+    web::block(move || {
         for (item_id, qty) in items {
             println!("Item: {item_id}{qty}");
 
             diesel::update(stock::table.filter(id.eq(item_id)))
                 .set(quantity.eq(quantity - qty))
-                .execute(&mut conn)?;
+                .execute(&mut conn)
+                .map_err(|_| "Cannot dec item stock in DB")?;
         }
-        Ok(())
+        Ok::<(), &str>(())
     })
-    .await??;
+    .await?
+    .map_err(error::ErrorInternalServerError)?;
 
     Ok(())
 }

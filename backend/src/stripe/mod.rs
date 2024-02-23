@@ -2,7 +2,7 @@ use std::{borrow::Borrow, collections::HashMap, num::ParseIntError};
 
 use crate::model::{item::Item, ItemId, Quantity};
 use actix_web::{
-    post,
+    error, post,
     web::{self, Json},
     HttpRequest, HttpResponse, Result,
 };
@@ -24,7 +24,7 @@ use crate::{
         order::insert_order,
         stock::{dec_items, item_from_db},
     },
-    error::{BackendError, ShopResult},
+    error::{BackendError},
     utils::print_red,
     DbPool, ENV,
 };
@@ -33,7 +33,7 @@ use crate::{
 pub async fn checkout(
     cart: Json<HashMap<ItemId, Quantity>>,
     pool: web::Data<DbPool>,
-) -> ShopResult<HttpResponse> {
+) -> Result<HttpResponse> {
     let mut item_map = HashMap::<Item, u32>::new();
     for (id, qty) in cart.iter() {
         let item = item_from_db(*id, &pool).await?;
@@ -54,7 +54,9 @@ pub async fn checkout(
         let mut create_product = CreateProduct::new(&item.title);
         create_product.metadata = Some(metadata.clone());
         create_product.description = Some(&item.description);
-        let product = Product::create(&client, create_product).await?;
+        let product = Product::create(&client, create_product)
+            .await
+            .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
         let mut create_price = CreatePrice::new(Currency::USD);
         create_price.product = Some(stripe::IdOrCreate::Id(&product.id));
@@ -62,7 +64,9 @@ pub async fn checkout(
         create_price.unit_amount = Some(item.price() * 100);
         create_price.expand = &["product"];
 
-        let price = Price::create(&client, create_price).await?;
+        let price = Price::create(&client, create_price)
+            .await
+            .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
         product_price_pairs.push((price, u64::from(*qty)));
     }
@@ -93,7 +97,8 @@ pub async fn checkout(
         };
         ShippingRate::create(&client, rate)
     }
-    .await?;
+    .await
+    .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     let payment_link = {
         let mut create_payment_link = CreatePaymentLink::new(
@@ -133,7 +138,8 @@ pub async fn checkout(
 
         PaymentLink::create(&client, create_payment_link)
     }
-    .await?;
+    .await
+    .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     Ok(HttpResponse::Ok().body(payment_link.url))
 }

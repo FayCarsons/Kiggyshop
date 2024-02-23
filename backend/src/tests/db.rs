@@ -4,7 +4,6 @@ mod tests {
 
     use diesel::{
         dsl::count, query_dsl::methods::SelectDsl, ExpressionMethods, QueryDsl, RunQueryDsl,
-        SelectableHelper,
     };
 
     use crate::{
@@ -58,7 +57,7 @@ mod tests {
         assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
 
         let new_carts = cart
-            .into_iter()
+            .iter()
             .map(|JsonCart { item, qty }| NewCart {
                 order_id: *inserted_id.as_ref().unwrap(),
                 item_id: *item,
@@ -177,9 +176,9 @@ mod tests {
                      description,
                      quantity,
                  }| NewItem {
-                    title: title,
-                    kind: kind,
-                    description: description,
+                    title,
+                    kind,
+                    description,
                     quantity: *quantity,
                 },
             )

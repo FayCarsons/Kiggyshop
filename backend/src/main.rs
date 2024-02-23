@@ -1,3 +1,4 @@
+#![feature(once_cell_try)]
 mod api;
 mod env;
 mod error;
@@ -41,15 +42,15 @@ async fn main() -> Result<(), std::io::Error> {
         .expect("BACKEND_PORT either not present or not valid");
     let bind = ("localhost", port);
 
-    init_env()?;
+    init_env().unwrap();
 
     let env = ENV.get().cloned().unwrap_or_default();
 
+    // I think this should be something I only need in dev, sso we can panic here
     if env.init_db {
-        init_stock()?;
+        init_stock().expect("Couldn't initialize DB with stock");
     }
 
-    // DATABASE POOL BUILDING
     let manager = r2d2::ConnectionManager::<SqliteConnection>::new(env.database_url);
     let pool = r2d2::Pool::builder()
         .build(manager)

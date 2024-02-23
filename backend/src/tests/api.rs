@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use diesel::{r2d2::ConnectionManager, QueryDsl, RunQueryDsl};
-    use std::{collections::HashMap, fs};
+    use std::{collections::HashMap};
 
     use actix_web::{test, web, App};
     use diesel::SqliteConnection;
@@ -40,7 +40,7 @@ mod tests {
 
         let stock = include_str!("../../stock.json");
         let stock: Vec<InputItem> =
-            serde_json::from_str(&stock).expect("Cannot deserialize stock.json");
+            serde_json::from_str(stock).expect("Cannot deserialize stock.json");
         let stock: Vec<NewItem> = stock
             .iter()
             .map(

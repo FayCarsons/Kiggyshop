@@ -13,7 +13,7 @@ use diesel::{prelude::*, r2d2::ConnectionManager};
 use r2d2::PooledConnection;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::ShopResult, DbPool};
+use crate::{DbPool};
 
 #[post("/orders/get/{filter}")]
 pub async fn get_orders(
