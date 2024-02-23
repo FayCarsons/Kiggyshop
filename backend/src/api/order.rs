@@ -3,9 +3,11 @@ use crate::model::{
     order::{JsonOrder, NewOrder, Order, OrderFilter},
 };
 use actix_web::{
-    delete, post,
+    delete,
+    error::{self, ErrorInternalServerError},
+    post,
     web::{self, Path},
-    HttpResponse,
+    HttpResponse, Result,
 };
 use diesel::{prelude::*, r2d2::ConnectionManager};
 use r2d2::PooledConnection;
@@ -17,51 +19,48 @@ use crate::{error::ShopResult, DbPool};
 pub async fn get_orders(
     pool: web::Data<DbPool>,
     filter: Path<OrderFilter>,
-) -> ShopResult<HttpResponse> {
+) -> Result<HttpResponse> {
     use crate::schema::orders;
     let filter = filter.into_inner();
 
-    let orders = web::block(move || -> ShopResult<Vec<Order>> {
-        let mut conn = pool.get()?;
+    let orders = web::block(move || {
+        let mut conn = pool.get().map_err(|_| "Cannot get DB connection")?;
 
-        let res = match filter {
+        match filter {
             OrderFilter::All => orders::table
                 .select(Order::as_select())
-                .get_results(&mut conn)?,
+                .get_results(&mut conn),
             OrderFilter::Fulfilled => orders::table
                 .select(Order::as_select())
                 .filter(orders::fulfilled.eq(true))
-                .get_results(&mut conn)?,
+                .get_results(&mut conn),
             OrderFilter::Unfulfilled => orders::table
                 .select(Order::as_select())
                 .filter(orders::fulfilled.eq(false))
-                .get_results(&mut conn)?,
-        };
-        Ok(res)
+                .get_results(&mut conn),
+        }
+        .map_err(|_| "Cannot fetch orders from DB")
     })
-    .await??;
+    .await?
+    .map_err(error::ErrorInternalServerError)?;
 
     let json = serde_json::to_string(&orders)?;
     Ok(HttpResponse::Ok().content_type("text/json").body(json))
 }
 
 #[delete("/orders/{id}")]
-pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> ShopResult<HttpResponse> {
+pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> Result<HttpResponse> {
     use crate::schema::orders;
     let id = id.into_inner();
-    let mut conn = pool.get()?;
 
-    web::block(move || -> ShopResult<()> {
-        match diesel::delete(orders::table.filter(orders::id.eq(id))).execute(&mut conn) {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("DATABASE ERROR: {e}");
-                panic!()
-            }
-        }
-        Ok(())
+    web::block(move || {
+        let mut conn = pool.get().map_err(|_| "Cannot connect to DB")?;
+        diesel::delete(orders::table.filter(orders::id.eq(id)))
+            .execute(&mut conn)
+            .map_err(|_| "Cannot delete order")
     })
-    .await??;
+    .await?
+    .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -75,7 +74,7 @@ pub struct OrderId {
 pub async fn post_order(
     pool: web::Data<DbPool>,
     body: web::Json<JsonOrder>,
-) -> ShopResult<HttpResponse> {
+) -> Result<HttpResponse> {
     let JsonOrder {
         name,
         street,
@@ -88,7 +87,9 @@ pub async fn post_order(
         .into_iter()
         .map(<(i32, i32)>::from)
         .collect::<Vec<(i32, i32)>>();
-    let conn = pool.get()?;
+    let conn = pool
+        .get()
+        .map_err(|e| ErrorInternalServerError(e.to_string()))?;
     let id = insert_order(conn, cart, name, street, zipcode).await?;
     let id = OrderId { id };
 
@@ -101,8 +102,8 @@ pub async fn insert_order(
     name: String,
     street: String,
     zipcode: String,
-) -> ShopResult<i32> {
-    web::block(move || -> ShopResult<i32> {
+) -> Result<i32> {
+    web::block(move || -> std::result::Result<i32, &str> {
         use crate::schema::{carts, orders};
 
         let order = NewOrder {
@@ -115,7 +116,8 @@ pub async fn insert_order(
         let inserted_id = diesel::insert_into(orders::table)
             .values(&order)
             .returning(orders::dsl::id)
-            .get_result::<i32>(&mut conn)?;
+            .get_result::<i32>(&mut conn)
+            .map_err(|_| "Cannot insert order into DB")?;
 
         let new_carts = cart
             .into_iter()
@@ -128,9 +130,10 @@ pub async fn insert_order(
 
         diesel::insert_into(carts::table)
             .values(&new_carts)
-            .execute(&mut conn)?;
+            .execute(&mut conn)
+            .map_err(|_| "Cannot insert carts into DB")?;
         Ok(inserted_id)
     })
-    .await
-    .expect("Failure while inserting order into DB")
+    .await?
+    .map_err(ErrorInternalServerError)
 }

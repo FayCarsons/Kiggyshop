@@ -4,7 +4,7 @@ use crate::model::{item::Item, ItemId, Quantity};
 use actix_web::{
     post,
     web::{self, Json},
-    HttpRequest, HttpResponse,
+    HttpRequest, HttpResponse, Result,
 };
 
 use stripe::{
@@ -144,31 +144,33 @@ pub async fn webhook_handler(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
-) -> HttpResponse {
+) -> Result<HttpResponse> {
     println!("INSERTING INTO DATABASE VIA STRIPE WEBHOOKS");
 
-    match parse_webhook(req, payload, pool).await {
-        Ok(()) => HttpResponse::Ok().finish(),
-        Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
-    }
+    parse_webhook(req, payload, pool)
+        .await
+        .map(|_| HttpResponse::Ok().finish())
 }
 
-/// Determines whether webhook is correct type, IE is a completed checkout session
+/// Determines whether webhook is correct type: is a completed checkout session
 pub async fn parse_webhook(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
-) -> ShopResult<()> {
+) -> Result<()> {
     print_red("", "CURRENTLY IN 'handle_webhook'");
 
-    let secret = "whsec_c9335e3acc0d0d41902e80bcd43289d05f6f7542e4f5688fbdfa150eb1642722";
+    #[cfg(not(release))]
+    let secret = std::env::var("STRIPE_SECRET").map_err(|_| {
+        actix_web::error::ErrorInternalServerError("Stripe secret not present in env")
+    })?;
 
     let payload_str = std::str::from_utf8(payload.borrow())
         .map_err(|e| BackendError::PaymentError(e.to_string()))?;
 
     let stripe_sig = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
 
-    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, secret) {
+    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, &secret) {
         if let EventType::CheckoutSessionCompleted = event.type_ {
             if let EventObject::CheckoutSession(session) = event.data.object {
                 handle_checkout(session, pool).await?;
@@ -185,11 +187,7 @@ pub async fn parse_webhook(
 }
 
 /// Takes data from completed checkout session, stores it in DB and updates stock
-/// PLEASE BREAK INTO SMALLER FNs
-async fn handle_checkout(
-    session: stripe::CheckoutSession,
-    pool: web::Data<DbPool>,
-) -> ShopResult<()> {
+async fn handle_checkout(session: stripe::CheckoutSession, pool: web::Data<DbPool>) -> Result<()> {
     let shipping_info = session.shipping_details.unwrap();
     let Shipping { address, name, .. } = shipping_info;
 
@@ -212,7 +210,7 @@ async fn handle_checkout(
             Ok((id, qty))
         })
         .collect::<Result<Vec<(i32, i32)>, ParseIntError>>()
-        .map_err(|e| BackendError::PaymentError(e.to_string()))?;
+        .map_err(|_| actix_web::error::ErrorInternalServerError("Cannot parse user cart"))?;
 
     let cart_conn = pool.get().unwrap();
     let stock_conn = pool.get().unwrap();
