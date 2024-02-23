@@ -28,7 +28,7 @@ jobs:
           sudo apt-get update &&
           sudo apt-get install -y libsqlite3-dev &&
           cargo install diesel_cli --no-default-features --features sqlite &&
-          cargo test --verbose
+          cargo +nightly test --verbose
 
   Elm: 
     runs-on: ubuntu-latest
