@@ -1,7 +1,3 @@
-use crate::model::{
-    cart::NewCart,
-    order::{JsonOrder, NewOrder, Order, OrderFilter},
-};
 use actix_web::{
     delete,
     error::{self, ErrorInternalServerError},
@@ -10,17 +6,21 @@ use actix_web::{
     HttpResponse, Result,
 };
 use diesel::{prelude::*, r2d2::ConnectionManager};
+use model::{
+    cart::NewCart,
+    order::{JsonOrder, NewOrder, Order, OrderFilter},
+};
 use r2d2::PooledConnection;
 use serde::{Deserialize, Serialize};
 
-use crate::{DbPool};
+use crate::DbPool;
 
 #[post("/orders/get/{filter}")]
 pub async fn get_orders(
     pool: web::Data<DbPool>,
     filter: Path<OrderFilter>,
 ) -> Result<HttpResponse> {
-    use crate::schema::orders;
+    use model::schema::orders;
     let filter = filter.into_inner();
 
     let orders = web::block(move || {
@@ -50,7 +50,7 @@ pub async fn get_orders(
 
 #[delete("/orders/{id}")]
 pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> Result<HttpResponse> {
-    use crate::schema::orders;
+    use model::schema::orders;
     let id = id.into_inner();
 
     web::block(move || {
@@ -104,7 +104,7 @@ pub async fn insert_order(
     zipcode: String,
 ) -> Result<i32> {
     web::block(move || -> std::result::Result<i32, &str> {
-        use crate::schema::{carts, orders};
+        use model::schema::{carts, orders};
 
         let order = NewOrder {
             name: &name,

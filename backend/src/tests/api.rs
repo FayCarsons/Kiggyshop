@@ -1,22 +1,21 @@
 #[cfg(test)]
 mod tests {
     use diesel::{r2d2::ConnectionManager, QueryDsl, RunQueryDsl};
-    use std::{collections::HashMap};
-
-    use actix_web::{test, web, App};
-    use diesel::SqliteConnection;
+    use std::collections::HashMap;
 
     use crate::{
         api::{
             order::{self, delete_order},
             stock::get_stock,
         },
-        model::{
-            item::{InputItem, NewItem},
-            order::{JsonOrder, NewOrder},
-            ItemId,
-        },
         tests::test_db,
+    };
+    use actix_web::{test, web, App};
+    use diesel::SqliteConnection;
+    use model::{
+        item::{InputItem, NewItem},
+        order::{JsonOrder, NewOrder},
+        ItemId,
     };
 
     fn create_db_pool() -> (
@@ -61,7 +60,7 @@ mod tests {
             .collect();
 
         let mut conn = db.connection();
-        diesel::insert_into(crate::schema::stock::table)
+        diesel::insert_into(model::schema::stock::table)
             .values(stock)
             .execute(&mut conn)
             .expect("Cannot insert stock.json into DB");
@@ -103,7 +102,7 @@ mod tests {
         test::call_service(&app, req).await;
 
         let mut conn = db.connection();
-        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1))
+        assert_eq!(model::schema::orders::table.count().first(&mut conn), Ok(1))
     }
 
     #[actix_web::test]
@@ -120,7 +119,7 @@ mod tests {
             .expect("Cannot deserialize mock order");
 
         let mut conn = db.connection();
-        diesel::insert_into(crate::schema::orders::table)
+        diesel::insert_into(model::schema::orders::table)
             .values([NewOrder {
                 name: &name,
                 street: &street,
@@ -141,8 +140,6 @@ mod tests {
         assert!(response.status().is_success());
 
         let mut conn = db.connection();
-        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(0))
+        assert_eq!(model::schema::orders::table.count().first(&mut conn), Ok(0))
     }
-
-    
 }

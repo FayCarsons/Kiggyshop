@@ -23,10 +23,10 @@ use crate::{
         order::insert_order,
         stock::{dec_items, item_from_db},
     },
-    model::{item::Item, ItemId, Quantity},
     utils::print_red,
     DbPool, ENV,
 };
+use model::{item::Item, ItemId, Quantity};
 
 #[post("/checkout")]
 pub async fn checkout(

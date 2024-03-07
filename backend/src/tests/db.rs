@@ -40,7 +40,7 @@ mod tests {
         let db = test_db::TestDb::new();
         let mut conn = db.connection();
 
-        use crate::schema::{carts, orders};
+        use model::schema::{carts, orders};
 
         let inserted_id = diesel::insert_into(orders::table)
             .values(&NewOrder {
@@ -54,7 +54,7 @@ mod tests {
 
         assert!(inserted_id.is_ok());
         assert_eq!(inserted_id, Ok(1));
-        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
+        assert_eq!(model::schema::orders::table.count().first(&mut conn), Ok(1));
 
         let new_carts = cart
             .iter()
@@ -71,7 +71,7 @@ mod tests {
 
         assert!(insert.is_ok());
         assert_eq!(
-            crate::schema::carts::table.count().first::<i64>(&mut conn),
+            model::schema::carts::table.count().first::<i64>(&mut conn),
             Ok(cart.len() as i64)
         );
     }
@@ -89,7 +89,7 @@ mod tests {
         let db = test_db::TestDb::new();
         let mut conn = db.connection();
 
-        use crate::schema::orders;
+        use model::schema::orders;
 
         let inserted_id = diesel::insert_into(orders::table)
             .values(&NewOrder {
@@ -103,18 +103,18 @@ mod tests {
 
         assert!(inserted_id.is_ok());
         assert_eq!(inserted_id, Ok(1));
-        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
+        assert_eq!(model::schema::orders::table.count().first(&mut conn), Ok(1));
 
         let res = diesel::update(
-            crate::schema::orders::table.filter(crate::schema::orders::id.eq(inserted_id.unwrap())),
+            model::schema::orders::table.filter(model::schema::orders::id.eq(inserted_id.unwrap())),
         )
-        .set(crate::schema::orders::fulfilled.eq(true))
+        .set(model::schema::orders::fulfilled.eq(true))
         .execute(&mut conn);
         assert!(res.is_ok());
 
         assert_eq!(
-            crate::schema::orders::table
-                .filter(crate::schema::orders::fulfilled.eq(true))
+            model::schema::orders::table
+                .filter(model::schema::orders::fulfilled.eq(true))
                 .count()
                 .first(&mut conn),
             Ok(1)
@@ -134,7 +134,7 @@ mod tests {
         let db = test_db::TestDb::new();
         let mut conn = db.connection();
 
-        use crate::schema::orders;
+        use model::schema::orders;
 
         let inserted_id = diesel::insert_into(orders::table)
             .values(&NewOrder {
@@ -148,17 +148,17 @@ mod tests {
 
         assert!(inserted_id.is_ok());
         assert_eq!(inserted_id, Ok(1));
-        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(1));
+        assert_eq!(model::schema::orders::table.count().first(&mut conn), Ok(1));
 
-        let res = diesel::delete(crate::schema::orders::table).execute(&mut conn);
+        let res = diesel::delete(model::schema::orders::table).execute(&mut conn);
         assert!(res.is_ok());
 
-        assert_eq!(crate::schema::orders::table.count().first(&mut conn), Ok(0));
+        assert_eq!(model::schema::orders::table.count().first(&mut conn), Ok(0));
     }
 
     #[test]
     fn insert_stock() {
-        use crate::schema::stock::{self, id};
+        use model::schema::stock::{self, id};
         let stock = fs::read_to_string("stock.json").unwrap();
         let stock: Vec<InputItem> = serde_json::from_str(&stock).unwrap();
 

@@ -1,9 +1,7 @@
-use crate::{
-    model::{
-        item::{InputItem, Item, NewItem},
-        ItemId,
-    },
+use model::{
+    item::{InputItem, Item, NewItem},
     schema::stock,
+    ItemId,
 };
 
 use actix_web::{
@@ -17,12 +15,10 @@ use std::{collections::HashMap, fs};
 
 use diesel::{prelude::*, r2d2::ConnectionManager};
 
-use crate::{
-    DbPool, ENV,
-};
+use crate::{DbPool, ENV};
 
 pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> Result<Item> {
-    use crate::schema::stock::id;
+    use model::schema::stock::id;
 
     let mut conn = pool.get().unwrap();
     web::block(move || -> std::result::Result<Item, &str> {
@@ -100,7 +96,7 @@ pub async fn update_item(
     new_fields: web::Json<InputItem>,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse> {
-    use crate::schema::stock::id;
+    use model::schema::stock::id;
 
     let item_id = item_id.into_inner();
     let InputItem {
@@ -140,7 +136,7 @@ pub async fn delete_stock(
     pool: web::Data<DbPool>,
     item_ids: web::Json<Vec<i32>>,
 ) -> Result<HttpResponse> {
-    use crate::schema::stock::*;
+    use model::schema::stock::id;
     let item_ids = item_ids.into_inner();
 
     web::block(move || {
@@ -188,7 +184,7 @@ pub async fn dec_items(
     items: Vec<(i32, i32)>,
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
 ) -> Result<()> {
-    use crate::schema::stock::{id, quantity};
+    use model::schema::stock::{id, quantity};
 
     web::block(move || {
         for (item_id, qty) in items {

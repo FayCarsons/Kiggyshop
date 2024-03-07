@@ -1,8 +1,6 @@
 #![feature(once_cell_try)]
 mod api;
 mod env;
-mod model;
-mod schema;
 mod stripe;
 #[cfg(test)]
 mod tests;
