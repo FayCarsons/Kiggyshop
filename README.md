@@ -1,4 +1,5 @@
 # Kiggyshop
+![example workflow](https://github.com/FayCarsons/Kiggyshop/.github/workflows/shop.yml/badge.svg) <br>
 An example of a fully functional, production-ready stack.
 
 Elm frontend, Rust backend via Actix Web, and Sqlite DB managed with Diesel ORM/query builder.
