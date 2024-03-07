@@ -1,4 +1,4 @@
-# Kiggyshop [![Rust and Elm CI](https://github.com/FayCarsons/Kiggyshop/actions/workflows/shop.yml/badge.svg)](https://github.com/FayCarsons/Kiggyshop/actions/workflows/shop.yml) <br>
+# Kiggyshop [![Rust and Elm CI](https://github.com/FayCarsons/Kiggyshop/actions/workflows/shop.yml/badge.svg)](https://github.com/FayCarsons/Kiggyshop/actions/workflows/shop.yml)
 An example of a fully functional, production-ready stack.
 
 Elm frontend, Rust backend via Actix Web, and Sqlite DB managed with Diesel ORM/query builder.
