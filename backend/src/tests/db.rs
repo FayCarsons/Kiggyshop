@@ -1,18 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use std::fs::{self};
+    use std::fs;
 
+    use crate::tests::test_db;
     use diesel::{
         dsl::count, query_dsl::methods::SelectDsl, ExpressionMethods, QueryDsl, RunQueryDsl,
     };
-
-    use crate::{
-        model::{
-            cart::{JsonCart, NewCart},
-            item::{InputItem, NewItem},
-            order::{JsonOrder, NewOrder},
-        },
-        tests::test_db,
+    use model::{
+        cart::{JsonCart, NewCart},
+        item::{InputItem, NewItem},
+        order::{JsonOrder, NewOrder},
     };
 
     #[test]
