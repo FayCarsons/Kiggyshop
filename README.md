@@ -4,7 +4,7 @@ An example of a fully functional, production-ready stack.
 Elm frontend, Rust backend via Actix Web, and Sqlite DB managed with Diesel ORM/query builder.
 
 It can be run with: `cd backend && cargo run` 
-And in another process: `cd frontend && npm install && np run dev`
+And in another process: `cd frontend && npm install && npm run dev`
 
 We are aiming for a release in Q1 2024.
 
