@@ -69,7 +69,7 @@ mod tests {
         let req = test::TestRequest::get().uri("/stock").to_request();
         let dummy = test::call_service(&app, req).await;
         assert!(dummy.status().is_success());
-        let req = test::TestRequest::get().uri("/stock/get").to_request();
+        let req = test::TestRequest::get().uri("/stock").to_request();
         let _: HashMap<ItemId, InputItem> = test::try_call_and_read_body_json(&app, req)
             .await
             .expect("Cannot deserialize body");
