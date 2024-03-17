@@ -66,7 +66,7 @@ mod tests {
             .expect("Cannot insert stock.json into DB");
         let app =
             test::init_service(App::new().app_data(web::Data::new(pool)).service(get_stock)).await;
-        let req = test::TestRequest::get().uri("/stock/get").to_request();
+        let req = test::TestRequest::get().uri("/stock").to_request();
         let dummy = test::call_service(&app, req).await;
         assert!(dummy.status().is_success());
         let req = test::TestRequest::get().uri("/stock/get").to_request();
