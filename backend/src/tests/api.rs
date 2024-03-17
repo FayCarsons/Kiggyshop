@@ -127,7 +127,7 @@ mod tests {
                 fulfilled: false,
             }])
             .execute(&mut conn)
-            .expect("Cannot insert ock order into DB");
+            .expect("Cannot insert mock order into DB");
 
         let app = test::init_service(
             App::new()

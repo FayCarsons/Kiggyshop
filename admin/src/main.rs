@@ -10,8 +10,7 @@ use std::{
 use actix_session::Session;
 
 use actix_web::{
-    get,
-    post,
+    get, post,
     web::{self, Redirect},
     App, HttpResponse, HttpServer, Result,
 };
@@ -115,7 +114,7 @@ async fn main() -> std::io::Result<()> {
             .service(admin_dashboard)
             .service(upload_image)
     })
-    .bind(("localhost", 3000))?
+    .bind(("localhost", 8080))?
     .run()
     .await
 }
