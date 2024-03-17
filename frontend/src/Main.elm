@@ -53,7 +53,6 @@ routeParser =
         [ Parse.map Gallery Parse.top
         , Parse.map Item (Parse.s "products" </> Parse.int)
         , Parse.s "checkout" </> Parse.map Checkout Parse.top
-        , Parse.s "about" </> Parse.map About Parse.top
         ]
 
 
@@ -99,7 +98,7 @@ getStockWithCart : Cart -> Cmd Msg
 getStockWithCart jsonCart =
     Http.get
         {- Http requests are being proxied by Vite to the Rust backend -}
-        { url = "/api/stock/get"
+        { url = "/api/stock"
         , expect = Http.expectJson (\res -> ( jsonCart, res ) |> GotCart |> Load) Stock.stockDecoder
         }
 
@@ -294,9 +293,6 @@ matchPage ({ page } as state) =
 
         Checkout ->
             Html.Lazy.lazy checkout state.shop
-
-        About ->
-            text "Unimplemented!"
 
         Error ->
             text "Unimplemented!"

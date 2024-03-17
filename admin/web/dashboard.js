@@ -17,16 +17,16 @@ const actionToMethod = (action) => {
   return {
     [itemAction.add]: "PUT",
     [itemAction.edit]: "PUT",
-    [itemAction.delete]: "delete",
+    [itemAction.delete]: "DELETE",
   }[action];
 };
 
 const actionToUrl = (action, id = null) => {
   return (
     {
-      [[itemAction.add, false]]: "/api/stock/add",
-      [[itemAction.edit, true]]: `/api/stock/update/${id}`,
-      [[itemAction.delete, false]]: "/api/stock/delete",
+      [[itemAction.add, false]]: "/api/stock",
+      [[itemAction.edit, true]]: `/api/stock/${id}`,
+      [[itemAction.delete, false]]: "/api/stock",
     }[[action, !!id]] ?? fail()
   );
 };
@@ -77,7 +77,7 @@ const showTab = async (tab) => {
 const initStock = async () => {
   if (Object.entries(stock).length > 0) stock = {};
   try {
-    const res = await fetch("/api/stock/get", {
+    const res = await fetch("/api/stock", {
       method: "GET",
       headers: {
         "Content-type": "application/json",
@@ -112,8 +112,8 @@ const showOrders = async (filter) => {
   filter = filter.trim();
 
   try {
-    const res = await fetch(`/api/orders/get/${filter}`, {
-      method: "POST",
+    const res = await fetch(`/api/orders/${filter}`, {
+      method: "GET",
       headers: {
         "Content-type": "application/json",
       },

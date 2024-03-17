@@ -1,7 +1,7 @@
 use actix_web::{
     delete,
     error::{self, ErrorInternalServerError},
-    post,
+    get, post,
     web::{self, Path},
     HttpResponse, Result,
 };
@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::DbPool;
 
-#[post("/orders/get/{filter}")]
+#[get("/orders/{filter}")]
 pub async fn get_orders(
     pool: web::Data<DbPool>,
     filter: Path<OrderFilter>,

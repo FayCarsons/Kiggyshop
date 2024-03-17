@@ -32,7 +32,7 @@ pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> Result<I
     .map_err(error::ErrorInternalServerError)
 }
 
-#[get("/stock/get_single/{item_id}")]
+#[get("/stock/{item_id}")]
 pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> Result<web::Json<Item>> {
     let item_id = item_id.into_inner();
     let item: Item = item_from_db(item_id, &pool).await?;
@@ -40,7 +40,7 @@ pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> Result<web
     Ok(web::Json(item))
 }
 
-#[get("/stock/get")]
+#[get("/stock")]
 pub async fn get_stock(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     let stock: Vec<Item> = web::block(move || -> std::result::Result<Vec<Item>, &str> {
         let mut conn = pool.get().map_err(|_| "couldn't get db connection")?;
@@ -63,7 +63,7 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .body(ser))
 }
 
-#[put("/stock/add")]
+#[put("/stock")]
 pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<InputItem>) -> Result<HttpResponse> {
     let item = item.into_inner();
 
@@ -90,7 +90,7 @@ pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<InputItem>) -> Re
     Ok(HttpResponse::Ok().finish())
 }
 
-#[put("/stock/update/{item_id}")]
+#[put("/stock/{item_id}")]
 pub async fn update_item(
     item_id: Path<i32>,
     new_fields: web::Json<InputItem>,
@@ -131,8 +131,8 @@ pub async fn update_item(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/stock/delete")]
-pub async fn delete_stock(
+#[delete("/stock")]
+pub async fn delete_items(
     pool: web::Data<DbPool>,
     item_ids: web::Json<Vec<i32>>,
 ) -> Result<HttpResponse> {
@@ -188,7 +188,7 @@ pub async fn dec_items(
 
     web::block(move || {
         for (item_id, qty) in items {
-            println!("Item: {item_id}{qty}");
+            println!("Item: {item_id} {qty}");
 
             diesel::update(stock::table.filter(id.eq(item_id)))
                 .set(quantity.eq(quantity - qty))

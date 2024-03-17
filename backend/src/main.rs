@@ -1,7 +1,6 @@
 #![feature(once_cell_try)]
 mod api;
 mod env;
-mod stripe;
 #[cfg(test)]
 mod tests;
 mod utils;
@@ -9,10 +8,10 @@ mod utils;
 use actix_cors::Cors;
 use api::{
     order::{delete_order, get_orders, post_order},
-    stock::{delete_stock, get_item, get_stock, init_stock, put_item, update_item},
+    stock::{delete_items, get_item, get_stock, init_stock, put_item, update_item},
+    stripe::{checkout, webhook_handler},
 };
 use env::{init_env, Env};
-use stripe::{checkout, webhook_handler};
 
 use std::sync::OnceLock;
 
@@ -55,19 +54,19 @@ async fn main() -> Result<(), std::io::Error> {
 
     HttpServer::new(move || {
         let logger = Logger::default();
-        let cors_cfg = Cors::default()
-            .allowed_origin("localhost:8080")
-            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-            .allowed_headers(vec![
-                header::AUTHORIZATION,
-                header::ACCEPT,
-                header::CONTENT_TYPE,
-            ])
-            .supports_credentials();
+        /* let cors_cfg = Cors::default()
+        .allowed_origin("localhost:8080")
+        .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+        .allowed_headers(vec![
+            header::AUTHORIZATION,
+            header::ACCEPT,
+            header::CONTENT_TYPE,
+        ])
+        .supports_credentials(); */
 
         App::new()
             .wrap(logger)
-            .wrap(cors_cfg)
+            /*.wrap(cors_cfg) */
             .wrap(Compress::default())
             .app_data(web::Data::new(pool.clone()))
             .service(
@@ -79,7 +78,7 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(update_item)
                     .service(get_item)
                     .service(put_item)
-                    .service(delete_stock)
+                    .service(delete_items)
                     .service(checkout)
                     .service(webhook_handler)
                     .service(Files::new("/resources", "./resources").show_files_listing()),

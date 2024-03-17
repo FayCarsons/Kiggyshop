@@ -15,7 +15,6 @@ type Route
     = Gallery
     | Item Int
     | Checkout
-    | About
     | Error
 
 

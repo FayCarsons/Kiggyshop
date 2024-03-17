@@ -44,14 +44,10 @@ pub async fn checkout(
     let secret_key = env.stripe_secret_key.clone();
     let client = Client::new(secret_key);
 
-    let mut metadata = HashMap::from([(String::from("async-stripe"), String::from("true"))]);
-    metadata.shrink_to_fit();
-
     let mut product_price_pairs = Vec::<(Price, u64)>::with_capacity(item_map.keys().len());
 
     for (item, qty) in &item_map {
         let mut create_product = CreateProduct::new(&item.title);
-        create_product.metadata = Some(metadata.clone());
         create_product.description = Some(&item.description);
         let product = Product::create(&client, create_product)
             .await
@@ -59,7 +55,6 @@ pub async fn checkout(
 
         let mut create_price = CreatePrice::new(Currency::USD);
         create_price.product = Some(stripe::IdOrCreate::Id(&product.id));
-        create_price.metadata = Some(metadata.clone());
         create_price.unit_amount = Some(item.price() * 100);
         create_price.expand = &["product"];
 
@@ -72,6 +67,7 @@ pub async fn checkout(
 
     let shipping = {
         let rate = CreateShippingRate {
+            metadata: None,
             delivery_estimate: Some(CreateShippingRateDeliveryEstimate {
                 maximum: Some(CreateShippingRateDeliveryEstimateMaximum {
                     unit: CreateShippingRateDeliveryEstimateMaximumUnit::Week,
@@ -89,7 +85,6 @@ pub async fn checkout(
                 ..Default::default()
             }),
             expand: &[],
-            metadata: Some(metadata.clone()),
             tax_behavior: Some(ShippingRateTaxBehavior::Exclusive),
             tax_code: None,
             type_: Some(ShippingRateType::FixedAmount),
