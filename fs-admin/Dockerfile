@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 
+# Dockerfile for admin app Nginx server
+
 # Use an Alpine Linux base image for its speed and small size
 FROM alpine:latest
 

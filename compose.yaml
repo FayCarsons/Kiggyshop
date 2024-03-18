@@ -1,0 +1,30 @@
+version: "2.22"
+
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - sqlite-data:var/lib/kiggyshop # Mount the volume where the SQLite database is expected
+    ports:
+      - "8080:8080" # Adjust if your backend listens on a different port
+    networks:
+      - webnet
+
+  nginx:
+    build: ./fs-kiggyshop
+    volumes:
+      - ./frontend/dist:var/www/html/kiggyshop:ro # Assuming your Nginx is configured to serve files from this location
+      - /etc/letsencrypt/live:ro
+    ports:
+      - "80:80" # Nginx is exposed on port 80
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - webnet
+
+volumes:
+  sqlite-data:
+
+networks:
+  webnet:
