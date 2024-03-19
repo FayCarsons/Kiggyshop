@@ -5,12 +5,11 @@
 
 ARG RUST_VERSION=1.75.0
 ARG APP_NAME=backend
-FROM rust:${RUST_VERSION}-slim AS build
+FROM rust:${RUST_VERSION}-slim-bullseye AS build
 ARG APP_NAME
-WORKDIR /kiggyshop
+WORKDIR /app
 
-COPY backend /kiggyshop/
-COPY model /kiggyshop/
+COPY ./backend/ .
 
 # Build the application.
 # Leverage a cache mount to /usr/local/cargo/registry/
@@ -20,12 +19,13 @@ COPY model /kiggyshop/
 # source code into the container. Once built, copy the executable to an
 # output directory before the cache mounted /app/target is unmounted.
 RUN --mount=type=bind,source=src,target=src \
-  --mount=type=bind,source=/backend/Cargo.toml,target=Cargo.toml \
-  --mount=type=bind,source=/backend/Cargo.lock,target=Cargo.lock \
+  --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
+  --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
   --mount=type=cache,target=/app/target/ \
   --mount=type=cache,target=/usr/local/cargo/registry/ \
   <<EOF
 set -e
+rustup default nightly
 cargo build --locked --release
 cp ./target/release/$APP_NAME /bin/server
 EOF
@@ -36,7 +36,9 @@ EOF
 # image from the build stage where the necessary files are copied from the build
 # stage.
 #
-FROM alpine:latest AS final
+FROM debian:buster-slim AS final
+
+ENV ACTIX_ENV=production
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user

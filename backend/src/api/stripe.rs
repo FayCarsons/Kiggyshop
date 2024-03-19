@@ -24,7 +24,7 @@ use crate::{
         stock::{dec_items, item_from_db},
     },
     utils::print_red,
-    DbPool, ENV,
+    DbPool, Env
 };
 use model::{item::Item, ItemId, Quantity};
 
@@ -32,6 +32,7 @@ use model::{item::Item, ItemId, Quantity};
 pub async fn checkout(
     cart: Json<HashMap<ItemId, Quantity>>,
     pool: web::Data<DbPool>,
+    env: web::Data<Env>
 ) -> Result<HttpResponse> {
     let mut item_map = HashMap::<Item, u32>::new();
     for (id, qty) in cart.iter() {
@@ -39,7 +40,6 @@ pub async fn checkout(
         item_map.insert(item, *qty);
     }
 
-    let env = ENV.get().unwrap();
 
     let secret_key = env.stripe_secret_key.clone();
     let client = Client::new(secret_key);

@@ -11,11 +11,11 @@ use actix_web::{
 };
 use r2d2::PooledConnection;
 use serde_json::to_string;
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
 
 use diesel::{prelude::*, r2d2::ConnectionManager};
 
-use crate::{DbPool, ENV};
+use crate::DbPool;
 
 pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> Result<Item> {
     use model::schema::stock::id;
@@ -152,10 +152,11 @@ pub async fn delete_items(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[cfg(not(release))]
 /// Only needed if DB does not have stock.
 /// Requires env var `INIT_DB=TRUE` to run
-pub fn init_stock() -> Result<()> {
-    let buffer = fs::read_to_string("stock.json")?;
+pub fn init_stock(db_url: &str) -> Result<()> {
+    let buffer = include_str!("../../stock.json");
 
     let de = serde_json::from_str::<Vec<InputItem>>(&buffer)?;
     let ins: Vec<NewItem> = de
@@ -168,7 +169,6 @@ pub fn init_stock() -> Result<()> {
         })
         .collect();
 
-    let db_url = &ENV.get().cloned().unwrap_or_default().database_url;
     let mut conn = SqliteConnection::establish(db_url)
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
