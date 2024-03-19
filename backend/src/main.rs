@@ -5,20 +5,25 @@ mod env;
 mod tests;
 mod utils;
 
-use actix_cors::Cors;
 use api::{
     order::{delete_order, get_orders, post_order},
     stock::{delete_items, get_item, get_stock, init_stock, put_item, update_item},
     stripe::{checkout, webhook_handler},
 };
+
 use env::{init_env, Env};
 
 use std::sync::OnceLock;
 
-use actix_files::Files;
+use actix_session::{
+    config::{BrowserSession, CookieContentSecurity},
+    storage::CookieSessionStore,
+    SessionMiddleware,
+};
+
 use actix_web::{
-    http::header,
-    middleware::{Compress, Logger},
+    cookie::{Key, SameSite},
+    middleware::Logger,
     web, App, HttpServer,
 };
 
@@ -26,6 +31,17 @@ use diesel::{r2d2, SqliteConnection};
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 static ENV: OnceLock<Env> = OnceLock::new();
+
+fn session_middleware() -> SessionMiddleware<CookieSessionStore> {
+    SessionMiddleware::builder(CookieSessionStore::default(), Key::generate())
+        .cookie_name(String::from("kiggyshop"))
+        .cookie_secure(true)
+        .session_lifecycle(BrowserSession::default())
+        .cookie_same_site(SameSite::Strict)
+        .cookie_content_security(CookieContentSecurity::Private)
+        .cookie_http_only(true)
+        .build()
+}
 
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -36,13 +52,12 @@ async fn main() -> Result<(), std::io::Error> {
         .map_err(|e| e.to_string())
         .and_then(|s| str::parse::<u16>(&s).map_err(|e| e.to_string()))
         .expect("BACKEND_PORT either not present or not valid");
-    let bind = ("localhost", port);
+    let bind = ("0.0.0.0", port);
 
     init_env().unwrap();
+    let env = ENV.get().cloned().unwrap();
 
-    let env = ENV.get().cloned().unwrap_or_default();
-
-    // I think this should be something I only need in dev, sso we can panic here
+    // I think this should be something I only need in dev, so we can panic here
     if env.init_db {
         init_stock().expect("Couldn't initialize DB with stock");
     }
@@ -54,20 +69,10 @@ async fn main() -> Result<(), std::io::Error> {
 
     HttpServer::new(move || {
         let logger = Logger::default();
-        /* let cors_cfg = Cors::default()
-        .allowed_origin("localhost:8080")
-        .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-        .allowed_headers(vec![
-            header::AUTHORIZATION,
-            header::ACCEPT,
-            header::CONTENT_TYPE,
-        ])
-        .supports_credentials(); */
 
         App::new()
             .wrap(logger)
-            /*.wrap(cors_cfg) */
-            .wrap(Compress::default())
+            .wrap(session_middleware())
             .app_data(web::Data::new(pool.clone()))
             .service(
                 web::scope("/api")
@@ -80,8 +85,7 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(put_item)
                     .service(delete_items)
                     .service(checkout)
-                    .service(webhook_handler)
-                    .service(Files::new("/resources", "./resources").show_files_listing()),
+                    .service(webhook_handler),
             )
             .service(webhook_handler)
     })

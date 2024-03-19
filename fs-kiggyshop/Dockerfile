@@ -3,11 +3,10 @@
 # Dockerfile for main app Nginx server
 
 # Use an Alpine Linux base image for its speed and small size
-FROM alpine:latest
+FROM nginx 
 
 # Install Nginx and Certbot then create a directory for the application
-RUN apk add --no-cache nginx certbot certbot-nginx
-
+RUN apt-get update && apt-get install -y certbot
 # Copy the dist directory from your frontend build
 COPY frontend/dist /var/www/html
 
