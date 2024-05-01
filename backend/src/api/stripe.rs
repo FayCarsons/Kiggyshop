@@ -32,7 +32,7 @@ use model::{item::Item, ItemId, Quantity};
 pub async fn checkout(
     cart: Json<HashMap<ItemId, Quantity>>,
     pool: web::Data<DbPool>,
-    env: web::Data<Env>
+    env: web::Data<Env<'_>>
 ) -> Result<HttpResponse> {
     let mut item_map = HashMap::<Item, u32>::new();
     for (id, qty) in cart.iter() {
@@ -40,9 +40,7 @@ pub async fn checkout(
         item_map.insert(item, *qty);
     }
 
-
-    let secret_key = env.stripe_secret_key.clone();
-    let client = Client::new(secret_key);
+    let client = Client::new(env.stripe_secret);
 
     let mut product_price_pairs = Vec::<(Price, u64)>::with_capacity(item_map.keys().len());
 
@@ -118,7 +116,7 @@ pub async fn checkout(
         create_payment_link.after_completion = Some(CreatePaymentLinkAfterCompletion {
             type_: stripe::CreatePaymentLinkAfterCompletionType::Redirect,
             redirect: Some(CreatePaymentLinkAfterCompletionRedirect {
-                url: env.completion_redirect.clone(),
+                url: env.completion_redirect.to_string(),
             }),
             hosted_confirmation: None,
         });
@@ -144,10 +142,11 @@ pub async fn webhook_handler(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
+    env: web::Data<Env<'_>>
 ) -> Result<HttpResponse> {
     println!("INSERTING INTO DATABASE VIA STRIPE WEBHOOKS");
 
-    parse_webhook(req, payload, pool)
+    parse_webhook(req, payload, pool, env.clone())
         .await
         .map(|_| HttpResponse::Ok().finish())
 }
@@ -157,20 +156,16 @@ pub async fn parse_webhook(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
+    env: web::Data<Env<'_>>
 ) -> Result<()> {
     print_red("", "CURRENTLY IN 'handle_webhook'");
-
-    #[cfg(not(release))]
-    let secret = std::env::var("STRIPE_SECRET").map_err(|_| {
-        actix_web::error::ErrorInternalServerError("Stripe secret not present in env")
-    })?;
 
     let payload_str = std::str::from_utf8(payload.borrow())
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     let stripe_sig = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
 
-    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, &secret) {
+    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, &env.stripe_key) {
         if let EventType::CheckoutSessionCompleted = event.type_ {
             if let EventObject::CheckoutSession(session) = event.data.object {
                 handle_checkout(session, pool).await?;

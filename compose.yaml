@@ -1,28 +1,39 @@
+name: kiggyshop
 services:
-  backend:
-    build: ./backend
+  kiggyserve:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      - REMOTE_DATABASE_PATH=/var/lib/kiggyserve/data.sqlite
     volumes:
-      - sqlite-data:var/lib/kiggyshop # Mount the volume where the SQLite database is expected
+      - sqlite-data:/var/lib/kiggyshop
     ports:
-      - "8080:8080" # Adjust if your backend listens on a different port
+      - 8080
     networks:
       - webnet
 
   nginx:
-    build: ./fs-kiggyshop
+    build:
+      context: .
+      dockerfile: ./fs-kiggyshop/Dockerfile
     volumes:
-      - ./frontend/dist:var/www/html/kiggyshop:ro # Assuming your Nginx is configured to serve files from this location
-      - /etc/letsencrypt/live:ro
+      - ./frontend/dist:/var/www/html/kiggyshop:ro
+      - letsencrypt:/etc/letsencrypt
     ports:
-      - "80:80" # Nginx is exposed on port 80
-      - "443:443"
+      - 80:80
+      - 443:443
     depends_on:
-      - backend
+      - kiggyserve
     networks:
       - webnet
 
 volumes:
   sqlite-data:
+  letsencrypt:
 
 networks:
   webnet:

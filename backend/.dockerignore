@@ -33,3 +33,9 @@ README.md
 /tests/
 /migrations/
 /target/
+fs-admin/
+fs-kiggyshop/
+frontend/
+.clj-kondo 
+.lsp
+bb.edn

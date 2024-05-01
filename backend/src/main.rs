@@ -1,13 +1,12 @@
-#![feature(once_cell_try)]
 mod api;
 mod env;
 #[cfg(test)]
 mod tests;
 mod utils;
 
-use api::{
+use crate::api::{
     order::{delete_order, get_orders, post_order},
-    stock::{delete_items, get_item, get_stock, init_stock, put_item, update_item},
+    stock::{delete_items, get_item, get_stock, put_item, update_item},
     stripe::{checkout, webhook_handler},
 };
 
@@ -45,16 +44,9 @@ fn session_middleware() -> SessionMiddleware<CookieSessionStore> {
 async fn main() -> Result<(), std::io::Error> {
     env_logger::init();
 
-    let env = Env::new().expect("ENV does not contain all necessary values!");
+    let env = Env::new().expect("ENV ERROR: ");
 
-    
-
-    // I think this should be something I only need in dev, so we can panic here
-    if env.init_db {
-        init_stock(&env.database_url).expect("Couldn't initialize DB with stock");
-    }
-
-    let manager = r2d2::ConnectionManager::<SqliteConnection>::new(env.database_url.clone());
+    let manager = r2d2::ConnectionManager::<SqliteConnection>::new(env.database_url);
     let pool = r2d2::Pool::builder()
         .build(manager)
         .expect("INVALID DB URL // DB POOL CANNOT BE BUILT");

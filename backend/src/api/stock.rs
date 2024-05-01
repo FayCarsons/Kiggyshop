@@ -152,34 +152,6 @@ pub async fn delete_items(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[cfg(not(release))]
-/// Only needed if DB does not have stock.
-/// Requires env var `INIT_DB=TRUE` to run
-pub fn init_stock(db_url: &str) -> Result<()> {
-    let buffer = include_str!("../../stock.json");
-
-    let de = serde_json::from_str::<Vec<InputItem>>(&buffer)?;
-    let ins: Vec<NewItem> = de
-        .iter()
-        .map(|item| NewItem {
-            title: &item.title,
-            kind: &item.kind,
-            description: &item.description,
-            quantity: item.quantity,
-        })
-        .collect();
-
-    let mut conn = SqliteConnection::establish(db_url)
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
-
-    diesel::insert_into(stock::table)
-        .values(ins)
-        .execute(&mut conn)
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
-
-    Ok(())
-}
-
 pub async fn dec_items(
     items: Vec<(i32, i32)>,
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
