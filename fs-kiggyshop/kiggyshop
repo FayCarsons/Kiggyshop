@@ -5,14 +5,14 @@ server {
 
     # Serve static files from the dist directory
     location / {
-        root  ${ASSET_PATH};
+        root  /var/www/kiggyshop/dist;
         index  index.html index.htm;
         try_files $uri $uri/ /index.html;
     }
 
     # Proxy API requests to another server
     location /api {
-        proxy_pass http://backend-server:${API_PORT};
+        proxy_pass http://backend-server:3000;
         proxy_set_header Host $host;
     }
 }

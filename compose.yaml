@@ -12,7 +12,7 @@ services:
     volumes:
       - sqlite-data:/var/lib/kiggyshop
     ports:
-      - 8080
+      - 3000:3000
     networks:
       - webnet
 
@@ -24,7 +24,7 @@ services:
       - ./frontend/dist:/var/www/html/kiggyshop:ro
       - letsencrypt:/etc/letsencrypt
     ports:
-      - 80:80
+      - 8080:80
       - 443:443
     depends_on:
       - kiggyserve

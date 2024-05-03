@@ -39,7 +39,7 @@ pub async fn get_orders(
                 .filter(orders::fulfilled.eq(false))
                 .get_results(&mut conn),
         }
-        .map_err(|_| "Cannot fetch orders from DB")
+        .map_err(|e| format!("Cannot fetch orders from DB: {e}"))
     })
     .await?
     .map_err(error::ErrorInternalServerError)?;

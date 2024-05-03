@@ -27,18 +27,7 @@ use actix_web::{
 use diesel::{r2d2, SqliteConnection};
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
-const ADDRESS_PORT: (&str, u16) = ("0.0.0.0", 8080);
-
-fn session_middleware() -> SessionMiddleware<CookieSessionStore> {
-    SessionMiddleware::builder(CookieSessionStore::default(), Key::generate())
-        .cookie_name(String::from("kiggyshop"))
-        .cookie_secure(true)
-        .session_lifecycle(BrowserSession::default())
-        .cookie_same_site(SameSite::Strict)
-        .cookie_content_security(CookieContentSecurity::Private)
-        .cookie_http_only(true)
-        .build()
-}
+const ADDRESS_PORT: (&str, u16) = ("0.0.0.0", 3000);
 
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -56,7 +45,6 @@ async fn main() -> Result<(), std::io::Error> {
 
         App::new()
             .wrap(logger)
-            .wrap(session_middleware())
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(env.clone()))
             .service(
