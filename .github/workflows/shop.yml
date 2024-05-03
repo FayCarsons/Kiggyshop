@@ -2,7 +2,7 @@ name: Rust and Elm CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
 
 env:
@@ -12,8 +12,8 @@ jobs:
   Rust:
     runs-on: ubuntu-latest
 
-    defaults: 
-      run: 
+    defaults:
+      run:
         working-directory: backend
 
     steps:
@@ -26,45 +26,46 @@ jobs:
           rustup default nightly
           rustup update
 
-      - name: Build
-        run: |
-          cargo +nightly build --verbose
-
       - name: Run tests
+        env:
+          REMOTE_DATABASE_PATH: ./data.sqlite
+          STRIPE_SECRET: ""
+          STRIPE_KEY: ""
+          COMPLETION_REDIRECT: ""
         run: |
           sudo apt-get update &&
           sudo apt-get install -y libsqlite3-dev &&
           cargo install diesel_cli --no-default-features --features sqlite &&
           cargo +nightly test --verbose
 
-  Elm: 
+  Elm:
     runs-on: ubuntu-latest
 
     defaults:
-      run: 
+      run:
         working-directory: frontend
 
-    steps: 
+    steps:
       - uses: actions/checkout@v3
 
       - name: Set up Node
         uses: actions/setup-node@v2
         with:
-          node-version: '16.17.0'
+          node-version: "16.17.0"
 
       - name: Cache node_modules
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: node_modules-${{ hashFiles('package.json', 'package-lock.json') }}    
+          key: node_modules-${{ hashFiles('package.json', 'package-lock.json') }}
 
       - name: Cache ~/.elm
         uses: actions/cache@v3
-        with: 
+        with:
           path: ~/.elm
           key: elm-${{ hashFiles('elm.json', 'elm-tooling.json') }}
 
-      - name: npm ci 
+      - name: npm ci
         if: steps.cache-node_modules.outputs.cache-hit != 'true'
         run: npm ci
 
