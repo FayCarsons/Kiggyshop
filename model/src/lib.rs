@@ -7,3 +7,5 @@ pub mod schema;
 pub type ItemId = u32;
 /// Represents either the quantity of an item in stock, or the quantity of an item in a user's cart
 pub type Quantity = u32;
+
+pub type CartMap = std::collections::HashMap<ItemId, Quantity>;

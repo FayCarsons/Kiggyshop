@@ -1,7 +1,7 @@
 use model::{
     item::{InputItem, Item, NewItem},
     schema::stock,
-    ItemId,
+    CartMap, ItemId,
 };
 
 use actix_web::{
@@ -153,7 +153,7 @@ pub async fn delete_items(
 }
 
 pub async fn dec_items(
-    items: Vec<(i32, i32)>,
+    items: CartMap,
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
 ) -> Result<()> {
     use model::schema::stock::{id, quantity};
@@ -162,8 +162,8 @@ pub async fn dec_items(
         for (item_id, qty) in items {
             println!("Item: {item_id} {qty}");
 
-            diesel::update(stock::table.filter(id.eq(item_id)))
-                .set(quantity.eq(quantity - qty))
+            diesel::update(stock::table.filter(id.eq(item_id as i32)))
+                .set(quantity.eq(quantity - qty as i32))
                 .execute(&mut conn)
                 .map_err(|_| "Cannot dec item stock in DB")?;
         }

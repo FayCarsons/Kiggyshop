@@ -24,17 +24,25 @@ use crate::{
         stock::{dec_items, item_from_db},
     },
     utils::print_red,
-    DbPool, Env
+    DbPool, Env,
 };
-use model::{item::Item, ItemId, Quantity};
+
+use model::{item::Item, CartMap, ItemId, Quantity};
+
+pub struct UserData {
+    name: String,
+    address: String,
+    email: String,
+    cart: HashMap<ItemId, Quantity>,
+}
 
 #[post("/checkout")]
 pub async fn checkout(
     cart: Json<HashMap<ItemId, Quantity>>,
     pool: web::Data<DbPool>,
-    env: web::Data<Env<'_>>
+    env: web::Data<Env<'_>>,
 ) -> Result<HttpResponse> {
-    let mut item_map = HashMap::<Item, u32>::new();
+    let mut item_map = HashMap::<Item, Quantity>::new();
     for (id, qty) in cart.iter() {
         let item = item_from_db(*id, &pool).await?;
         item_map.insert(item, *qty);
@@ -142,7 +150,7 @@ pub async fn webhook_handler(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
-    env: web::Data<Env<'_>>
+    env: web::Data<Env<'_>>,
 ) -> Result<HttpResponse> {
     println!("INSERTING INTO DATABASE VIA STRIPE WEBHOOKS");
 
@@ -156,7 +164,7 @@ pub async fn parse_webhook(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
-    env: web::Data<Env<'_>>
+    env: web::Data<Env<'_>>,
 ) -> Result<()> {
     print_red("", "CURRENTLY IN 'handle_webhook'");
 
@@ -200,11 +208,11 @@ async fn handle_checkout(session: stripe::CheckoutSession, pool: web::Data<DbPoo
     let cart = cart
         .iter()
         .map(|(id, qty)| {
-            let id = str::parse::<i32>(id)?;
-            let qty = str::parse::<i32>(qty)?;
+            let id = str::parse::<u32>(id)?;
+            let qty = str::parse::<u32>(qty)?;
             Ok((id, qty))
         })
-        .collect::<Result<Vec<(i32, i32)>, ParseIntError>>()
+        .collect::<Result<CartMap, ParseIntError>>()
         .map_err(|_| actix_web::error::ErrorInternalServerError("Cannot parse user cart"))?;
 
     let cart_conn = pool.get().unwrap();

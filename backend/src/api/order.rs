@@ -1,17 +1,15 @@
 use actix_web::{
-    delete,
-    error::{self, ErrorInternalServerError},
-    get, post,
+    delete, error, get, put,
     web::{self, Path},
     HttpResponse, Result,
 };
 use diesel::{prelude::*, r2d2::ConnectionManager};
 use model::{
     cart::NewCart,
-    order::{JsonOrder, NewOrder, Order, OrderFilter},
+    order::{NewOrder, Order, OrderFilter},
+    CartMap,
 };
 use r2d2::PooledConnection;
-use serde::{Deserialize, Serialize};
 
 use crate::DbPool;
 
@@ -24,7 +22,9 @@ pub async fn get_orders(
     let filter = filter.into_inner();
 
     let orders = web::block(move || {
-        let mut conn = pool.get().map_err(|_| "Cannot get DB connection")?;
+        let mut conn = pool
+            .get()
+            .map_err(|e| format!("Cannot connect to database: {e}"))?;
 
         match filter {
             OrderFilter::All => orders::table
@@ -48,6 +48,37 @@ pub async fn get_orders(
     Ok(HttpResponse::Ok().content_type("text/json").body(json))
 }
 
+#[put("/orders/fulfilled")]
+pub async fn orders_fulfilled(
+    pool: web::Data<DbPool>,
+    fulfilled_orders: web::Json<Vec<Order>>,
+) -> Result<HttpResponse> {
+    let mut conn = pool
+        .get()
+        .map_err(|e| error::ErrorInternalServerError(format!("Cannot connect to database: {e}")))?;
+    let ids = fulfilled_orders
+        .into_inner()
+        .into_iter()
+        .map(|Order { id, .. }| id)
+        .collect::<Vec<i32>>();
+    use model::schema::orders;
+
+    web::block(move || {
+        diesel::update(orders::table.filter(orders::id.eq_any(ids)))
+            .set(orders::fulfilled.eq(true))
+            .execute(&mut conn)
+    })
+    .await
+    .map(|e| match e {
+        Ok(_) => Ok(()),
+        Err(err) => Err(error::ErrorInternalServerError(format!(
+            "Cannot update DB: {err}"
+        ))),
+    })??;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
 #[delete("/orders/{id}")]
 pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> Result<HttpResponse> {
     use model::schema::orders;
@@ -65,40 +96,9 @@ pub async fn delete_order(pool: web::Data<DbPool>, id: Path<i32>) -> Result<Http
     Ok(HttpResponse::Ok().finish())
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderId {
-    pub id: i32,
-}
-
-#[post("/orders")]
-pub async fn post_order(
-    pool: web::Data<DbPool>,
-    body: web::Json<JsonOrder>,
-) -> Result<HttpResponse> {
-    let JsonOrder {
-        name,
-        street,
-        zipcode,
-        cart,
-        ..
-    } = body.into_inner();
-
-    let cart = cart
-        .into_iter()
-        .map(<(i32, i32)>::from)
-        .collect::<Vec<(i32, i32)>>();
-    let conn = pool
-        .get()
-        .map_err(|e| ErrorInternalServerError(e.to_string()))?;
-    let id = insert_order(conn, cart, name, street, zipcode).await?;
-    let id = OrderId { id };
-
-    Ok(HttpResponse::Ok().content_type("application/json").json(id))
-}
-
 pub async fn insert_order(
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
-    cart: Vec<(i32, i32)>,
+    cart: CartMap,
     name: String,
     street: String,
     zipcode: String,
@@ -123,8 +123,8 @@ pub async fn insert_order(
             .into_iter()
             .map(|(item_id, quantity)| NewCart {
                 order_id: inserted_id,
-                item_id,
-                quantity,
+                item_id: item_id.clone() as i32,
+                quantity: quantity.clone() as i32,
             })
             .collect::<Vec<NewCart>>();
 
@@ -135,5 +135,5 @@ pub async fn insert_order(
         Ok(inserted_id)
     })
     .await?
-    .map_err(ErrorInternalServerError)
+    .map_err(error::ErrorInternalServerError)
 }

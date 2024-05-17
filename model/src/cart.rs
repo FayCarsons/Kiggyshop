@@ -1,16 +1,25 @@
+use crate::{ItemId, Quantity};
+
 use super::schema;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct JsonCart {
-    pub item: i32,
-    pub qty: i32,
+    item: ItemId,
+    qty: Quantity,
 }
 
-impl From<JsonCart> for (i32, i32) {
+pub fn to_map(_self: Vec<JsonCart>) -> std::collections::HashMap<ItemId, Quantity> {
+    _self
+        .into_iter()
+        .map(|JsonCart { item, qty }| (item, qty))
+        .collect()
+}
+
+impl<T: From<u32>> From<JsonCart> for (T, T) {
     fn from(JsonCart { item, qty }: JsonCart) -> Self {
-        (item, qty)
+        (item.into(), qty.into())
     }
 }
 

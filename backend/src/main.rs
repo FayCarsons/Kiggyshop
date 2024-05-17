@@ -5,7 +5,7 @@ mod tests;
 mod utils;
 
 use crate::api::{
-    order::{delete_order, get_orders, post_order},
+    order::{delete_order, get_orders, orders_fulfilled},
     stock::{delete_items, get_item, get_stock, put_item, update_item},
     stripe::{checkout, webhook_handler},
 };
@@ -51,7 +51,7 @@ async fn main() -> Result<(), std::io::Error> {
                 web::scope("/api")
                     .service(get_stock)
                     .service(get_orders)
-                    .service(post_order)
+                    .service(orders_fulfilled)
                     .service(delete_order)
                     .service(update_item)
                     .service(get_item)
