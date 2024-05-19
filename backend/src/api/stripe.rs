@@ -30,10 +30,10 @@ use crate::{
 use model::{item::Item, CartMap, ItemId, Quantity};
 
 pub struct UserData {
-    name: String,
-    address: String,
-    email: String,
-    cart: HashMap<ItemId, Quantity>,
+    pub name: String,
+    pub address: String,
+    pub email: String,
+    pub cart: HashMap<ItemId, Quantity>,
 }
 
 #[post("/checkout")]

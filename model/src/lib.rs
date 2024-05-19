@@ -1,3 +1,4 @@
+pub mod address;
 pub mod cart;
 pub mod item;
 pub mod order;

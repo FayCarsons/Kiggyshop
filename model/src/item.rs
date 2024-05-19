@@ -2,7 +2,14 @@ use serde::{Deserialize, Serialize};
 
 use diesel::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum Kind {
+    BigPrint = 0,
+    SmallPrint = 1,
+    Button = 2,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
 pub struct InputItem {
     pub title: String,
     pub kind: String,
@@ -46,11 +53,19 @@ pub struct Item {
 impl Item {
     #[must_use]
     pub fn price(&self) -> i64 {
+        /*
+        use Kind::*;
+        match self.kind {
+            BigPrint => 20,
+            SmallPrint => 7,
+            Button => 3,
+        }
+        */
         match self.kind.as_str() {
-            "SmallPrint" => 7,
             "BigPrint" => 20,
+            "SmallPrint" => 7,
             "Button" => 3,
-            _ => 0,
+            _ => 20,
         }
     }
 }

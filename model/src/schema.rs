@@ -1,11 +1,23 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    addresses (id) {
+        id -> Integer,
+        order -> Integer,
+        number -> Integer,
+        street -> Text,
+        city -> Text,
+        state -> Text,
+        zipcode -> Integer,
+    }
+}
+
+diesel::table! {
     carts (id) {
         id -> Integer,
-        order_id -> Integer,
-        item_id -> Integer,
         quantity -> Integer,
+        order -> Integer,
+        item -> Integer,
     }
 }
 
@@ -13,9 +25,8 @@ diesel::table! {
     orders (id) {
         id -> Integer,
         name -> Text,
-        street -> Text,
-        zipcode -> Text,
-        fulfilled -> Bool,
+        email -> Text,
+        shipped -> Bool,
     }
 }
 
@@ -23,16 +34,14 @@ diesel::table! {
     stock (id) {
         id -> Integer,
         title -> Text,
-        kind -> Text,
+        kind -> Integer,
         description -> Text,
         quantity -> Integer,
     }
 }
 
-diesel::joinable!(carts -> orders (order_id));
+diesel::joinable!(addresses -> orders (order));
+diesel::joinable!(carts -> orders (order));
+diesel::joinable!(carts -> stock (item));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    carts,
-    orders,
-    stock,
-);
+diesel::allow_tables_to_appear_in_same_query!(addresses, carts, orders, stock,);

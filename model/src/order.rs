@@ -19,9 +19,7 @@ pub struct JsonOrder {
 pub struct Order {
     pub id: i32,
     pub name: String,
-    pub street: String,
-    pub zipcode: String,
-    pub fulfilled: bool,
+    pub shipped: bool,
 }
 
 #[derive(Insertable)]
@@ -29,9 +27,7 @@ pub struct Order {
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewOrder<'a> {
     pub name: &'a str,
-    pub street: &'a str,
-    pub zipcode: &'a str,
-    pub fulfilled: bool,
+    pub shipped: bool,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Clone, Copy, Debug)]

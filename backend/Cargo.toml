@@ -31,6 +31,7 @@ dotenvy_macro = "0.15.7"
 awc = { version = "3.4.0", features = ["rustls"] }
 actix-extras = "0.1.0"
 chrono = "0.4.38"
+askama = "0.12.1"
 
 [profile.test]
 debug-assertions = false

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    header {
+      text-align: center;
+      padding-bottom: 20px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .message {
+      margin-bottom: 20px;
+    }
+
+    .order-details {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .order-details th,
+    .order-details td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .order-details th {
+      background-color: #f9f9f9;
+    }
+
+    .item-image {
+      width: 50px;
+      height: auto;
+    }
+
+    .total {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Thank you {{ name }}!</h1>
+    </header>
+    <div class="message">
+      <p>We appreciate your support! Your order is being processed and a shipping confirmation will be sent soon :3</p>
+    </div>
+    <table class="order-details">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Title</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            <img src="{{ image_url }}" alt="An image of a digital art piiece titled: {{ item.title }}"></img>
+          </td>
+          <td>{{ item.title }}</td>
+          <td>{{ item.price }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="summary">
+      <p class="total">Order total: {{ total }}</p>
+    </div>
+  </div>
+</body>
+
+</html>

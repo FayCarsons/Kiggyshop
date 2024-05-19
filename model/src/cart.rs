@@ -26,10 +26,10 @@ impl<T: From<u32>> From<JsonCart> for (T, T) {
 #[derive(Queryable, Selectable, Associations, Identifiable)]
 #[diesel(belongs_to(crate::order::Order))]
 #[diesel(table_name = schema::carts)]
-pub struct DbCart {
+pub struct TableCart {
     pub id: i32,
-    pub order_id: i32,
-    pub item_id: String,
+    pub order: i32,
+    pub item: String,
     pub quantity: i32,
 }
 
@@ -37,7 +37,7 @@ pub struct DbCart {
 #[diesel(table_name = crate::schema::carts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewCart {
-    pub order_id: i32,
-    pub item_id: i32,
+    pub order: i32,
+    pub item: i32,
     pub quantity: i32,
 }

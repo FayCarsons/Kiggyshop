@@ -1,5 +1,6 @@
-mod api;
+pub mod api;
 mod env;
+pub mod mail;
 #[cfg(test)]
 mod tests;
 mod utils;
