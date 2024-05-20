@@ -3,7 +3,7 @@
 diesel::table! {
     addresses (id) {
         id -> Integer,
-        order -> Integer,
+        order_id -> Integer,
         number -> Integer,
         street -> Text,
         city -> Text,
@@ -16,7 +16,7 @@ diesel::table! {
     carts (id) {
         id -> Integer,
         quantity -> Integer,
-        order -> Integer,
+        order_id -> Integer,
         item -> Integer,
     }
 }
@@ -40,8 +40,7 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(addresses -> orders (order));
-diesel::joinable!(carts -> orders (order));
-diesel::joinable!(carts -> stock (item));
+diesel::joinable!(addresses -> orders (order_id));
+diesel::joinable!(carts -> orders (order_id));
 
 diesel::allow_tables_to_appear_in_same_query!(addresses, carts, orders, stock,);

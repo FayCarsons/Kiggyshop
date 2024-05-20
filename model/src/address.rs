@@ -13,7 +13,7 @@ const VALID_STATES: [&str; 50] = [
 #[derive(Queryable, Selectable, Clone, Serialize, Deserialize, Hash, Debug)]
 #[diesel(table_name = crate::schema::addresses)]
 pub struct TableAddress {
-    order: i32,
+    order_id: i32,
     number: i32,
     street: String,
     city: String,
@@ -34,7 +34,7 @@ pub struct Address {
 impl From<TableAddress> for Address {
     fn from(
         TableAddress {
-            order,
+            order_id,
             number,
             street,
             city,
@@ -43,7 +43,7 @@ impl From<TableAddress> for Address {
         }: TableAddress,
     ) -> Address {
         Address {
-            order: order as u32,
+            order: order_id as u32,
             number: number as StreetNumber,
             street,
             city,
@@ -65,7 +65,7 @@ impl<'a, 'b: 'a> From<&'b Address> for NewAddress<'a> {
         }: &'b Address,
     ) -> NewAddress<'a> {
         NewAddress {
-            order: *order as i32,
+            order_id: *order as i32,
             number: *number as i32,
             street,
             city,
@@ -81,7 +81,7 @@ pub type Zipcode = u32;
 #[derive(Insertable, Clone, Copy, Debug)]
 #[diesel(table_name = crate::schema::addresses)]
 pub struct NewAddress<'a> {
-    pub order: i32,
+    pub order_id: i32,
     pub number: i32,
     pub street: &'a str,
     pub city: &'a str,

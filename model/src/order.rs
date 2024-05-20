@@ -1,4 +1,4 @@
-use super::cart::JsonCart;
+use super::CartMap;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ pub struct JsonOrder {
     pub street: String,
     pub zipcode: String,
     pub total: i32,
-    pub cart: Vec<JsonCart>,
+    pub cart: CartMap,
 }
 
 #[derive(
@@ -35,14 +35,4 @@ pub enum OrderFilter {
     All,
     Fulfilled,
     Unfulfilled,
-}
-
-impl std::fmt::Display for Order {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{{ Order: \n\t name: {:?}, \n street: {}, \n zipcode: {}, \n, fulfilled: {} \n }}",
-            self.name, self.street, self.zipcode, self.fulfilled
-        )
-    }
 }

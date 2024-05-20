@@ -37,25 +37,29 @@ create table orders (
 
 create table addresses (
   id integer not null primary key,
-  "order" integer not null,
+  order_id integer not null,
   number integer not null,
   street text not null,
   city text not null,
   state text not null,
   zipcode integer not null,
-  foreign key ("order") references orders (id)
+  foreign key (order_id) references orders (id)
 );
 
 create table carts_new (
   id integer not null primary key,
   quantity integer not null,
-  "order" integer not null, 
+  order_id integer not null, 
   item integer not null,
-  foreign key ("order") references orders (id),
-  foreign key (item) references stock (id)
+  foreign key (order_id) references orders (id)
 );
 
-insert into carts_new (id, "order", item, quantity) 
+insert into carts_new (
+  id, 
+  order_id, 
+  item, 
+  quantity
+) 
 select 
   c.id,
   c.order_id,
