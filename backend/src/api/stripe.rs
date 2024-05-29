@@ -173,7 +173,7 @@ pub async fn parse_webhook(
 
     let stripe_sig = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
 
-    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, &env.stripe_key) {
+    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, env.stripe_key) {
         if let EventType::CheckoutSessionCompleted = event.type_ {
             if let EventObject::CheckoutSession(session) = event.data.object {
                 handle_checkout(session, pool).await?;

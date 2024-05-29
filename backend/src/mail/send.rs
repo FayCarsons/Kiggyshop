@@ -2,7 +2,6 @@ use crate::{api::stripe::UserData, Env};
 use actix_web::Result;
 use serde::Serialize;
 
-use super::templates::Confirmation;
 
 #[derive(Default, Clone, Hash, Debug, Serialize)]
 pub struct Email {
@@ -20,8 +19,8 @@ pub async fn send_confirmation(
     }: UserData,
 ) -> Result<()> {
     let Env {
-        mailgun_user,
-        mailgun_pass,
+        
+        
         ..
     } = *env.into_inner();
 

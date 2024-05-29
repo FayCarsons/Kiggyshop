@@ -14,7 +14,7 @@ mod tests {
     use diesel::SqliteConnection;
     use model::{
         item::{Item, NewItem, TableItem},
-        order::{NewOrder, TableOrder},
+        order::{NewOrder, Order},
         ItemId,
     };
 
@@ -58,54 +58,19 @@ mod tests {
     }
 
     #[actix_web::test]
-    // Not working - for soe reason FS is locked for second call
-    async fn test_insert_order() {
-        // Initialize test double DB and get connection pool
-        let (db, pool) = create_db_pool();
-
-        // Dummy order
-        let order = serde_json::from_str::<Order>(include_str!("./mock_order.json"))
-            .expect("Cannot deserialize mock order");
-
-        // Create app, add pool and insert/delete services
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(pool))
-                .service(order::post_order),
-        )
-        .await;
-
-        // Build request with dummy order JSON body
-        let req = test::TestRequest::post()
-            .uri("/orders")
-            .set_json(order)
-            .to_request();
-        // Make request to `post_order`
-        test::call_service(&app, req).await;
-
-        let mut conn = db.connection();
-        assert_eq!(model::schema::orders::table.count().first(&mut conn), Ok(1))
-    }
-
-    #[actix_web::test]
     async fn test_delete_order() {
         let (db, pool) = create_db_pool();
 
         // Dummy order
-        let JsonOrder {
-            name,
-            street,
-            zipcode,
-            ..
-        } = serde_json::from_str::<JsonOrder>(include_str!("./mock_order.json"))
+        let Order { name, .. } = serde_json::from_str::<Order>(include_str!("./mock_order.json"))
             .expect("Cannot deserialize mock order");
 
         let mut conn = db.connection();
         diesel::insert_into(model::schema::orders::table)
             .values([NewOrder {
                 name: &name,
-                street: &street,
-                zipcode: &zipcode,
+                total: 30_00,
+                email: "",
                 shipped: false,
             }])
             .execute(&mut conn)

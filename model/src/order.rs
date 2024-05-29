@@ -32,6 +32,25 @@ pub struct NewOrder<'a> {
     pub shipped: bool,
 }
 
+impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
+    fn from(
+        Order {
+            name,
+            email,
+            total,
+            shipped,
+            ..
+        }: &'b Order,
+    ) -> Self {
+        Self {
+            name,
+            email,
+            total: *total as i32,
+            shipped: *shipped,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum OrderFilter {

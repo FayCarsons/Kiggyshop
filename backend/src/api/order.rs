@@ -7,8 +7,7 @@ use diesel::{prelude::*, r2d2::ConnectionManager};
 use model::{
     address::{Address, NewAddress},
     cart::NewCart,
-    order::{NewOrder, Order, OrderFilter, TableOrder},
-    schema, CartMap,
+    order::{NewOrder, OrderFilter, TableOrder}, CartMap,
 };
 use r2d2::PooledConnection;
 
@@ -125,8 +124,8 @@ pub async fn insert_order(
             .into_iter()
             .map(|(item_id, quantity)| NewCart {
                 order_id,
-                item_id: item_id.clone() as i32,
-                quantity: quantity.clone() as i32,
+                item_id: item_id as i32,
+                quantity: quantity as i32,
             })
             .collect::<Vec<NewCart>>();
 
