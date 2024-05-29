@@ -1,5 +1,5 @@
 use model::{
-    item::{InputItem, Item, NewItem},
+    item::{Item, NewItem, TableItem},
     schema::stock,
     CartMap, ItemId,
 };
@@ -9,7 +9,6 @@ use actix_web::{
     web::{self, Path},
     HttpResponse, Result,
 };
-use r2d2::PooledConnection;
 use serde_json::to_string;
 use std::collections::HashMap;
 
@@ -21,12 +20,15 @@ pub async fn item_from_db(item_id: ItemId, pool: &web::Data<DbPool>) -> Result<I
     use model::schema::stock::id;
 
     let mut conn = pool.get().unwrap();
-    web::block(move || -> std::result::Result<Item, &str> {
-        stock::table
+    web::block(move || -> std::result::Result<Item, String> {
+        match stock::table
             .filter(id.eq(item_id as i32))
-            .select(Item::as_select())
+            .select(TableItem::as_select())
             .get_result(&mut conn)
-            .map_err(|_| "cannot fetch item from DB")
+        {
+            Ok(item) => Ok(Item::from(item)),
+            Err(e) => Err(format!("Cannot fetch item: {e}")),
+        }
     })
     .await?
     .map_err(error::ErrorInternalServerError)
@@ -42,20 +44,20 @@ pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> Result<web
 
 #[get("/stock")]
 pub async fn get_stock(pool: web::Data<DbPool>) -> Result<HttpResponse> {
-    let stock: Vec<Item> = web::block(move || -> std::result::Result<Vec<Item>, &str> {
+    let stock = web::block(move || {
         let mut conn = pool.get().map_err(|_| "couldn't get db connection")?;
         stock::table
-            .select(Item::as_select())
-            .get_results(&mut conn)
-            .map_err(|_| "Cannot fetch stock from DB")
+            .select(TableItem::as_select())
+            .get_results::<TableItem>(&mut conn)
+            .map_err(|e| format!("Cannot fetch stock: {e}"))
     })
     .await?
     .map_err(error::ErrorInternalServerError)?;
 
     let stock = stock
         .into_iter()
-        .map(|item| (item.id, InputItem::from(item)))
-        .collect::<HashMap<i32, InputItem>>();
+        .map(|item| (item.id as u32, Item::from(item)))
+        .collect::<HashMap<u32, Item>>();
     let ser = to_string(&stock)?;
 
     Ok(HttpResponse::Ok()
@@ -64,15 +66,15 @@ pub async fn get_stock(pool: web::Data<DbPool>) -> Result<HttpResponse> {
 }
 
 #[put("/stock")]
-pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<InputItem>) -> Result<HttpResponse> {
+pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<Item>) -> Result<HttpResponse> {
     let item = item.into_inner();
 
     web::block(move || {
         let item = NewItem {
             title: &item.title,
-            kind: &item.kind,
+            kind: item.kind as i32,
             description: &item.description,
-            quantity: item.quantity,
+            quantity: item.quantity as i32,
         };
 
         let mut conn = pool.get().map_err(|_| "Cannot connect to DB")?;
@@ -93,13 +95,13 @@ pub async fn put_item(pool: web::Data<DbPool>, item: web::Json<InputItem>) -> Re
 #[put("/stock/{item_id}")]
 pub async fn update_item(
     item_id: Path<i32>,
-    new_fields: web::Json<InputItem>,
+    new_fields: web::Json<Item>,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse> {
     use model::schema::stock::id;
 
     let item_id = item_id.into_inner();
-    let InputItem {
+    let Item {
         title,
         kind,
         description,
@@ -109,9 +111,9 @@ pub async fn update_item(
     web::block(move || {
         let new_item = NewItem {
             title: &title,
-            kind: &kind,
+            kind: kind as i32,
             description: &description,
-            quantity,
+            quantity: quantity as i32,
         };
 
         let mut conn = pool.get().map_err(|_| "Cannot connect to DB".to_string())?;
@@ -153,13 +155,14 @@ pub async fn delete_items(
 }
 
 pub async fn dec_items(
-    items: CartMap,
-    mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
+    cart: CartMap,
+    mut conn: r2d2::PooledConnection<ConnectionManager<SqliteConnection>>,
 ) -> Result<()> {
     use model::schema::stock::{id, quantity};
 
+    let cart = cart.clone();
     web::block(move || {
-        for (item_id, qty) in items {
+        for (item_id, qty) in cart {
             println!("Item: {item_id} {qty}");
 
             diesel::update(stock::table.filter(id.eq(item_id as i32)))

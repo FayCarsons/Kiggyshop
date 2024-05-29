@@ -13,8 +13,8 @@ mod tests {
     use actix_web::{test, web, App};
     use diesel::SqliteConnection;
     use model::{
-        item::{InputItem, NewItem},
-        order::{JsonOrder, NewOrder},
+        item::{Item, NewItem, TableItem},
+        order::{NewOrder, TableOrder},
         ItemId,
     };
 
@@ -38,26 +38,8 @@ mod tests {
         let (db, pool) = create_db_pool();
 
         let stock = include_str!("../../stock.json");
-        let stock: Vec<InputItem> =
-            serde_json::from_str(stock).expect("Cannot deserialize stock.json");
-        let stock: Vec<NewItem> = stock
-            .iter()
-            .map(
-                |InputItem {
-                     title,
-                     kind,
-                     description,
-                     quantity,
-                 }| {
-                    NewItem {
-                        title,
-                        kind,
-                        description,
-                        quantity: *quantity,
-                    }
-                },
-            )
-            .collect();
+        let stock: Vec<Item> = serde_json::from_str(stock).expect("Cannot deserialize stock.json");
+        let stock: Vec<NewItem> = stock.iter().map(NewItem::from).collect();
 
         let mut conn = db.connection();
         diesel::insert_into(model::schema::stock::table)
@@ -70,7 +52,7 @@ mod tests {
         let dummy = test::call_service(&app, req).await;
         assert!(dummy.status().is_success());
         let req = test::TestRequest::get().uri("/stock").to_request();
-        let _: HashMap<ItemId, InputItem> = test::try_call_and_read_body_json(&app, req)
+        let _: HashMap<ItemId, TableItem> = test::try_call_and_read_body_json(&app, req)
             .await
             .expect("Cannot deserialize body");
     }
@@ -82,7 +64,7 @@ mod tests {
         let (db, pool) = create_db_pool();
 
         // Dummy order
-        let order = serde_json::from_str::<JsonOrder>(include_str!("./mock_order.json"))
+        let order = serde_json::from_str::<Order>(include_str!("./mock_order.json"))
             .expect("Cannot deserialize mock order");
 
         // Create app, add pool and insert/delete services
@@ -124,7 +106,7 @@ mod tests {
                 name: &name,
                 street: &street,
                 zipcode: &zipcode,
-                fulfilled: false,
+                shipped: false,
             }])
             .execute(&mut conn)
             .expect("Cannot insert mock order into DB");

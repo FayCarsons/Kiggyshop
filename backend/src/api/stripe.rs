@@ -194,14 +194,14 @@ async fn handle_checkout(session: stripe::CheckoutSession, pool: web::Data<DbPoo
     let shipping_info = session.shipping_details.unwrap();
     let Shipping { address, name, .. } = shipping_info;
 
-    let address = address.unwrap();
-    let street = format!(
-        "{} {}",
-        address.line1.unwrap_or_default(),
-        address.line2.unwrap_or_default()
-    );
-    let zipcode = address.postal_code.unwrap_or_default();
-    let name = name.unwrap_or_default();
+    let address = address.ok_or_else(|| {
+        error::ErrorInternalServerError(format!(
+            "Address not present in Stripe Order for {}",
+            name.clone().unwrap_or(String::from("")),
+        ))
+    })?;
+
+    let name = name.ok_or(error::ErrorInternalServerError("No name for order"))?;
 
     // Collecting user cart from session metadata
     let cart = session.metadata.unwrap();
@@ -217,9 +217,18 @@ async fn handle_checkout(session: stripe::CheckoutSession, pool: web::Data<DbPoo
 
     let cart_conn = pool.get().unwrap();
     let stock_conn = pool.get().unwrap();
-    insert_order(cart_conn, cart.clone(), name, street, zipcode).await?;
+    let order = insert_order(
+        cart_conn,
+        cart.clone(),
+        name,
+        session.customer_email,
+        address,
+    );
 
-    dec_items(cart, stock_conn).await?;
+    let stock = dec_items(cart, stock_conn);
+
+    order.await?;
+    stock.await?;
 
     print_red("", "WEBHOOK COMPLETED");
 

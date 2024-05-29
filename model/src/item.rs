@@ -2,9 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use diesel::prelude::*;
 
-#[derive(
-    Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default,
-)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+#[repr(u8)]
 pub enum Kind {
     #[default]
     BigPrint = 0,
@@ -12,12 +11,30 @@ pub enum Kind {
     Button = 2,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
+impl From<i32> for Kind {
+    fn from(value: i32) -> Self {
+        unsafe { std::mem::transmute(value as u8) }
+    }
+}
+
+impl From<Kind> for i32 {
+    fn from(value: Kind) -> Self {
+        (value as u8) as i32
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct Item {
     pub title: String,
     pub kind: Kind,
     pub description: String,
-    pub quantity: i32,
+    pub quantity: u32,
+}
+
+impl std::hash::Hash for Item {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.title.hash(state)
+    }
 }
 
 impl<'a, 'b: 'a> From<&'b Item> for NewItem<'a> {
@@ -33,16 +50,32 @@ impl<'a, 'b: 'a> From<&'b Item> for NewItem<'a> {
             title,
             kind: *kind as i32,
             description,
-            quantity: *quantity,
+            quantity: *quantity as i32,
         }
     }
 }
 
-#[derive(
-    Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, Queryable, Selectable,
-)]
+impl From<TableItem> for Item {
+    fn from(
+        TableItem {
+            title,
+            kind,
+            description,
+            quantity,
+            ..
+        }: TableItem,
+    ) -> Self {
+        Self {
+            title,
+            kind: Kind::from(kind),
+            description,
+            quantity: quantity as u32,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::stock)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct TableItem {
     pub id: i32,
     pub title: String,
@@ -66,7 +99,6 @@ impl Item {
 
 #[derive(Insertable, AsChangeset)]
 #[diesel(table_name = crate::schema::stock)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewItem<'a> {
     pub title: &'a str,
     pub kind: i32,

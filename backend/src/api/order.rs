@@ -5,9 +5,10 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2::ConnectionManager};
 use model::{
+    address::{Address, NewAddress},
     cart::NewCart,
-    order::{NewOrder, Order, OrderFilter},
-    CartMap,
+    order::{NewOrder, Order, OrderFilter, TableOrder},
+    schema, CartMap,
 };
 use r2d2::PooledConnection;
 
@@ -28,15 +29,15 @@ pub async fn get_orders(
 
         match filter {
             OrderFilter::All => orders::table
-                .select(Order::as_select())
+                .select(TableOrder::as_select())
                 .get_results(&mut conn),
-            OrderFilter::Fulfilled => orders::table
-                .select(Order::as_select())
-                .filter(orders::fulfilled.eq(true))
+            OrderFilter::Shipped => orders::table
+                .select(TableOrder::as_select())
+                .filter(orders::shipped.eq(true))
                 .get_results(&mut conn),
-            OrderFilter::Unfulfilled => orders::table
-                .select(Order::as_select())
-                .filter(orders::fulfilled.eq(false))
+            OrderFilter::Unshipped => orders::table
+                .select(TableOrder::as_select())
+                .filter(orders::shipped.eq(false))
                 .get_results(&mut conn),
         }
         .map_err(|e| format!("Cannot fetch orders from DB: {e}"))
@@ -51,7 +52,7 @@ pub async fn get_orders(
 #[put("/orders/fulfilled")]
 pub async fn orders_fulfilled(
     pool: web::Data<DbPool>,
-    fulfilled_orders: web::Json<Vec<Order>>,
+    fulfilled_orders: web::Json<Vec<TableOrder>>,
 ) -> Result<HttpResponse> {
     let mut conn = pool
         .get()
@@ -59,13 +60,13 @@ pub async fn orders_fulfilled(
     let ids = fulfilled_orders
         .into_inner()
         .into_iter()
-        .map(|Order { id, .. }| id)
+        .map(|TableOrder { id, .. }| id)
         .collect::<Vec<i32>>();
     use model::schema::orders;
 
     web::block(move || {
         diesel::update(orders::table.filter(orders::id.eq_any(ids)))
-            .set(orders::fulfilled.eq(true))
+            .set(orders::shipped.eq(true))
             .execute(&mut conn)
     })
     .await
@@ -100,20 +101,21 @@ pub async fn insert_order(
     mut conn: PooledConnection<ConnectionManager<SqliteConnection>>,
     cart: CartMap,
     name: String,
-    street: String,
-    zipcode: String,
-) -> Result<i32> {
-    web::block(move || -> std::result::Result<i32, &str> {
-        use model::schema::{carts, orders};
+    email: Option<String>,
+    address: stripe::Address,
+) -> Result<()> {
+    web::block(move || -> std::result::Result<(), String> {
+        use model::schema::{addresses, carts, orders};
 
+        // NOTE: add actual total
         let order = NewOrder {
             name: &name,
-            street: &street,
-            zipcode: &zipcode,
-            fulfilled: false,
+            total: 0,
+            email: &email.unwrap_or_default(),
+            shipped: false,
         };
 
-        let inserted_id = diesel::insert_into(orders::table)
+        let order_id = diesel::insert_into(orders::table)
             .values(&order)
             .returning(orders::dsl::id)
             .get_result::<i32>(&mut conn)
@@ -122,7 +124,7 @@ pub async fn insert_order(
         let new_carts = cart
             .into_iter()
             .map(|(item_id, quantity)| NewCart {
-                order_id: inserted_id,
+                order_id,
                 item_id: item_id.clone() as i32,
                 quantity: quantity.clone() as i32,
             })
@@ -132,7 +134,42 @@ pub async fn insert_order(
             .values(&new_carts)
             .execute(&mut conn)
             .map_err(|_| "Cannot insert carts into DB")?;
-        Ok(inserted_id)
+
+        let (number, street) = {
+            let full = address
+                .line1
+                .map(|line| line + &address.line2.unwrap_or_default())
+                .ok_or("No address field in order")?;
+            full.trim()
+                .split_once(" ")
+                .ok_or(format!("Malformed address: {full}"))
+                .and_then(|(number, name)| match str::parse::<u32>(number) {
+                    Ok(num) => Ok((num, name.to_string())),
+                    Err(e) => Err(format!("Invalid house number: {e}")),
+                })?
+        };
+
+        let zipcode = address
+            .postal_code
+            .ok_or("No zipcode specified for order")
+            .and_then(|str| str::parse::<u32>(&str).map_err(|_| "Cannot parse zipcode"))?;
+
+        let address = Address {
+            number,
+            street,
+            city: address.city.ok_or("No city specified for order")?,
+            state: address.state.ok_or("No state specified for order")?,
+            zipcode,
+            order: order_id as u32,
+            name,
+        };
+
+        diesel::insert_into(addresses::table)
+            .values(NewAddress::from(&address))
+            .execute(&mut conn)
+            .map_err(|e| format!("Cannot insert address into db: {e}"))?;
+
+        Ok(())
     })
     .await?
     .map_err(error::ErrorInternalServerError)

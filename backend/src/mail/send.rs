@@ -1,7 +1,8 @@
 use crate::{api::stripe::UserData, Env};
-use actix_web::{HttpResponse, Result};
-use model::cart::JsonCart;
+use actix_web::Result;
 use serde::Serialize;
+
+use super::templates::Confirmation;
 
 #[derive(Default, Clone, Hash, Debug, Serialize)]
 pub struct Email {

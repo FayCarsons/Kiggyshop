@@ -13,17 +13,7 @@ use crate::api::{
 
 use env::Env;
 
-use actix_session::{
-    config::{BrowserSession, CookieContentSecurity},
-    storage::CookieSessionStore,
-    SessionMiddleware,
-};
-
-use actix_web::{
-    cookie::{Key, SameSite},
-    middleware::Logger,
-    web, App, HttpServer,
-};
+use actix_web::{middleware::Logger, web, App, HttpServer};
 
 use diesel::{r2d2, SqliteConnection};
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;

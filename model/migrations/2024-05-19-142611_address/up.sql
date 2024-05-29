@@ -1,7 +1,7 @@
 PRAGMA foreign_keys = OFF;
 
 create table stock_new (
-  id integer not null primary key,
+  id integer not null primary key autoincrement,
   title text not null, 
   kind integer not null,
   description text not null,
@@ -29,35 +29,35 @@ alter table stock_new rename to stock;
 
 drop table orders;
 create table orders (
-  id integer not null primary key,
+  id integer not null primary key autoincrement,
   name text not null,
+  total integer not null,
   email text not null,
   shipped boolean not null
 );
 
 create table addresses (
-  id integer not null primary key,
-  order_id integer not null,
+  name text not null,
+  id integer not null primary key autoincrement,
+  order_id integer not null references orders (id),
   number integer not null,
   street text not null,
   city text not null,
   state text not null,
-  zipcode integer not null,
-  foreign key (order_id) references orders (id)
+  zipcode integer not null
 );
 
 create table carts_new (
-  id integer not null primary key,
+  id integer not null primary key autoincrement,
   quantity integer not null,
-  order_id integer not null, 
-  item integer not null,
-  foreign key (order_id) references orders (id)
+  order_id integer not null references orders (id), 
+  item_id integer not null references stock (id)
 );
 
 insert into carts_new (
   id, 
   order_id, 
-  item, 
+  item_id, 
   quantity
 ) 
 select 

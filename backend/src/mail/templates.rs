@@ -19,9 +19,9 @@ pub struct Confirmation {
 fn text_confirmation(
     Confirmation {
         name, total, cart, ..
-    }: Confirmation,
+    }: &Confirmation,
 ) -> String {
-    let row_len = items.iter().fold(
+    let [title_width, price_width, quantity_width, total_width] = cart.iter().fold(
         [0; 4],
         |mut acc,
          Item {
@@ -31,7 +31,7 @@ fn text_confirmation(
              total,
          }| {
             for (idx, column) in [
-                *title,
+                title.clone(),
                 price.to_string(),
                 quantity.to_string(),
                 total.to_string(),
@@ -51,10 +51,10 @@ fn text_confirmation(
         "",
         "",
         "",
-        title_width = row_len[0],
-        price_width = row_len[1],
-        quantity_width = row_len[2],
-        total_width = row_len[3]
+        title_width = title_width,
+        price_width = price_width,
+        quantity_width = quantity_width,
+        total_width = total_width
     );
 
     let header = format!(
@@ -63,13 +63,13 @@ fn text_confirmation(
         "Price",
         "Quantity",
         "Total",
-        title_width = row_len[0],
-        price_width = row_len[1],
-        quantity_width = row_len[2],
-        total_width = row_len[3]
+        title_width = title_width,
+        price_width = price_width,
+        quantity_width = quantity_width,
+        total_width = total_width
     );
 
-    let order_details = items
+    let order_details = cart
         .iter()
         .fold(format!("{separator}\n{header}"),
             |mut acc, Item {
@@ -78,10 +78,18 @@ fn text_confirmation(
                  quantity,
                  total,
              }| {
-                acc.push_str(&format!("{separator}\n| {:<title_width$} | {:<price_width$} | {:>quantity_width$} | {:>total_width$} |", title, price, quantity, total, title_width = row_len[0], price_width = row_len[1], quantity_width = row_len[2], total_width = row_len[3]));
+                acc.push_str(
+                    &format!("{separator}\n| {:<title_width$} | {:<price_width$} | {:>quantity_width$} | {:>total_width$} |", 
+                              title, price, quantity, total, title_width = title_width, price_width = price_width, quantity_width = quantity_width, total_width = total_width));
                 acc
             }
         );
+
+    let total_box = format!(
+        "{separator}\n| {:>total_width$} |\n{separator}",
+        String::from("Total: ") + &total.to_string(),
+        total_width = title_width + price_width + quantity_width + total_width
+    );
 
     format!(
         r#"
@@ -91,6 +99,7 @@ fn text_confirmation(
         shipping confirmation will be sent shortly.
 
         {order_details}
+        {total_box}
     "#
     )
 }
@@ -146,14 +155,24 @@ fn test_text_mail() {
             quantity: 2,
             total: 800,
         },
-    ];    
+    ];
 
-    let total = cart.iter().map(|Item {  total, .. }| total).sum();
+    let total = cart.iter().map(|Item { total, .. }| total).sum();
 
     let order = Confirmation {
-        name: "peeper",
-        address: "1400 fourteenhundred st",
-        total, 
+        name: "peeper".to_owned(),
+        address: "1400 fourteenhundred st".to_owned(),
+        total,
         cart,
+    };
+
+    let text_confirmation = text_confirmation(&order);
+    print!("{text_confirmation}");
+    println!("Does this look right? [y/n]");
+    use std::io::stdin;
+    let mut buf = String::new();
+    stdin().read_line(&mut buf).expect("Didnt enter a response");
+    if !(buf.trim() == "y") {
+        panic!()
     }
 }

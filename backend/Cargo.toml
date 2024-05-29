@@ -11,9 +11,9 @@ bench = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.5.1"
-serde = { version = "1.0.199", features = ["derive"] }
-serde_json = "1.0.116"
+actix-web = "4.6.0"
+serde = { version = "1.0.202", features = ["derive"] }
+serde_json = "1.0.117"
 diesel = { version = "2.1.6", features = [
   "sqlite",
   "returning_clauses_for_sqlite_3_35",
@@ -21,16 +21,14 @@ diesel = { version = "2.1.6", features = [
 ] }
 r2d2 = "0.8.10"
 env_logger = "0.11.3"
-async-stripe = { version = "0.37.0", features = ["runtime-tokio-hyper"] }
+async-stripe = { version = "0.37.0", features = ["runtime-tokio-hyper-rustls"] }
 model = { path = "../model/" }
 url = "2.5.0"
 diesel_logger = "0.3.0"
-actix-session = { version = "0.9.0", features = ["cookie-session"] }
 dotenvy = "0.15.7"
 dotenvy_macro = "0.15.7"
-awc = { version = "3.4.0", features = ["rustls"] }
+awc = { version = "3.5.0", features = ["rustls"] }
 actix-extras = "0.1.0"
-chrono = "0.4.38"
 askama = "0.12.1"
 
 [profile.test]
