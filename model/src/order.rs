@@ -1,4 +1,6 @@
-use super::{cart::NewCart, CartMap};
+use crate::address::Address;
+
+use super::CartMap;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +10,7 @@ pub struct Order {
     pub email: String,
     pub total: u32,
     pub cart: CartMap,
+    pub address: Address,
     pub shipped: bool,
 }
 

@@ -22,7 +22,7 @@ fn text_confirmation(
     }: &Confirmation,
 ) -> String {
     let [title_width, price_width, quantity_width, total_width] = cart.iter().fold(
-        [0; 4],
+        [5, 5, 8, 5],
         |mut acc,
          Item {
              title,
@@ -59,7 +59,7 @@ fn text_confirmation(
 
     let header = format!(
         "| {:^title_width$} | {:^price_width$} | {:^quantity_width$} | {:^total_width$} |",
-        "Total",
+        "Title",
         "Price",
         "Quantity",
         "Total",
@@ -79,7 +79,7 @@ fn text_confirmation(
                  total,
              }| {
                 acc.push_str(
-                    &format!("{separator}\n| {:<title_width$} | {:<price_width$} | {:>quantity_width$} | {:>total_width$} |", 
+                    &format!("{separator}\n| {:<title_width$} | {:<price_width$} | {:>quantity_width$} | {:>total_width$} |\n", 
                               title, price, quantity, total, title_width = title_width, price_width = price_width, quantity_width = quantity_width, total_width = total_width));
                 acc
             }
@@ -102,77 +102,4 @@ fn text_confirmation(
         {total_box}
     "#
     )
-}
-
-#[test]
-fn test_text_mail() {
-    let cart = vec![
-        Item {
-            title: String::from("Apple"),
-            price: 100,
-            quantity: 10,
-            total: 1000,
-        },
-        Item {
-            title: String::from("Banana"),
-            price: 50,
-            quantity: 20,
-            total: 1000,
-        },
-        Item {
-            title: String::from("Orange"),
-            price: 75,
-            quantity: 15,
-            total: 1125,
-        },
-        Item {
-            title: String::from("Milk"),
-            price: 200,
-            quantity: 5,
-            total: 1000,
-        },
-        Item {
-            title: String::from("Bread"),
-            price: 150,
-            quantity: 7,
-            total: 1050,
-        },
-        Item {
-            title: String::from("Eggs"),
-            price: 250,
-            quantity: 4,
-            total: 1000,
-        },
-        Item {
-            title: String::from("Cheese"),
-            price: 300,
-            quantity: 3,
-            total: 900,
-        },
-        Item {
-            title: String::from("Butter"),
-            price: 400,
-            quantity: 2,
-            total: 800,
-        },
-    ];
-
-    let total = cart.iter().map(|Item { total, .. }| total).sum();
-
-    let order = Confirmation {
-        name: "peeper".to_owned(),
-        address: "1400 fourteenhundred st".to_owned(),
-        total,
-        cart,
-    };
-
-    let text_confirmation = text_confirmation(&order);
-    print!("{text_confirmation}");
-    println!("Does this look right? [y/n]");
-    use std::io::stdin;
-    let mut buf = String::new();
-    stdin().read_line(&mut buf).expect("Didnt enter a response");
-    if !(buf.trim() == "y") {
-        panic!()
-    }
 }

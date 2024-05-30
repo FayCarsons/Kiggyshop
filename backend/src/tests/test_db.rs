@@ -23,12 +23,11 @@ impl TestDb {
 
         println!("DB PATH: {:?}", path);
         std::fs::File::create(&path).unwrap();
-        let migration = std::process::Command::new("diesel")
+        let migration = std::process::Command::new("sqlite3")
             .args([
-                "migration",
-                "run",
-                "--database-url",
                 path.to_str().expect("Malformed test db path"),
+                include_str!("../../../model/migrations/2024-05-19-142608_init/up.sql"),
+                include_str!("../../../model/migrations/2024-05-19-142611_address/up.sql"),
             ])
             .spawn();
         if let Ok(mut child) = migration {

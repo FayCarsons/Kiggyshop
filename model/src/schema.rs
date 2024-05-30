@@ -26,8 +26,8 @@ diesel::table! {
     orders (id) {
         id -> Integer,
         name -> Text,
-        total -> Integer,
         email -> Text,
+        total -> Integer,
         shipped -> Bool,
     }
 }

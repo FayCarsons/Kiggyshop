@@ -10,7 +10,7 @@ pub struct Env<'a> {
 
 impl Env<'static> {
     pub fn new() -> Result<Env<'static>, String> {
-        #[cfg(debug_assertions)]
+        #[cfg(any(debug_assertions, test))]
         {
             // We are in development
             let database_url = dotenvy_macro::dotenv!("REMOTE_DATABASE_PATH");
@@ -28,7 +28,7 @@ impl Env<'static> {
                 mailgun_pass,
             })
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(not(any(debug_assertions, test)))]
         {
             // Building in Docker container
             let database_url = std::env!("REMOTE_DATABASE_PATH");

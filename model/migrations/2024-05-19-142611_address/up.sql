@@ -31,8 +31,8 @@ drop table orders;
 create table orders (
   id integer not null primary key autoincrement,
   name text not null,
-  total integer not null,
   email text not null,
+  total integer not null,
   shipped boolean not null
 );
 

@@ -7,7 +7,8 @@ use diesel::{prelude::*, r2d2::ConnectionManager};
 use model::{
     address::{Address, NewAddress},
     cart::NewCart,
-    order::{NewOrder, OrderFilter, TableOrder}, CartMap,
+    order::{NewOrder, OrderFilter, TableOrder},
+    CartMap,
 };
 use r2d2::PooledConnection;
 
@@ -159,12 +160,13 @@ pub async fn insert_order(
             city: address.city.ok_or("No city specified for order")?,
             state: address.state.ok_or("No state specified for order")?,
             zipcode,
-            order: order_id as u32,
             name,
         };
 
+        let insertable = NewAddress::new(&address, order_id);
+
         diesel::insert_into(addresses::table)
-            .values(NewAddress::from(&address))
+            .values(insertable)
             .execute(&mut conn)
             .map_err(|e| format!("Cannot insert address into db: {e}"))?;
 

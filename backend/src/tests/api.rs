@@ -52,7 +52,7 @@ mod tests {
         let dummy = test::call_service(&app, req).await;
         assert!(dummy.status().is_success());
         let req = test::TestRequest::get().uri("/stock").to_request();
-        let _: HashMap<ItemId, TableItem> = test::try_call_and_read_body_json(&app, req)
+        let _: HashMap<ItemId, Item> = test::try_call_and_read_body_json(&app, req)
             .await
             .expect("Cannot deserialize body");
     }

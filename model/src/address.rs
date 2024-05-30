@@ -13,10 +13,9 @@ const VALID_STATES: [&str; 50] = [
     "WI", "WY",
 ];
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Address {
     pub name: String,
-    pub order: u32,
     pub number: StreetNumber,
     pub street: String,
     pub city: String,
@@ -50,17 +49,16 @@ impl From<TableAddress> for Address {
     fn from(
         TableAddress {
             name,
-            order_id,
             number,
             street,
             city,
             state,
             zipcode,
+            ..
         }: TableAddress,
     ) -> Address {
         Address {
             name,
-            order: order_id as u32,
             number: number as StreetNumber,
             street,
             city,
@@ -83,30 +81,6 @@ pub struct TableAddress {
     zipcode: i32,
 }
 
-impl<'a, 'b: 'a> From<&'b Address> for NewAddress<'a> {
-    fn from(
-        Address {
-            name,
-            order,
-            number,
-            street,
-            city,
-            state,
-            zipcode,
-        }: &'b Address,
-    ) -> NewAddress<'a> {
-        NewAddress {
-            name,
-            order_id: *order as i32,
-            number: *number as i32,
-            street,
-            city,
-            state,
-            zipcode: *zipcode as i32,
-        }
-    }
-}
-
 #[derive(Insertable, Clone, Copy, Debug)]
 #[diesel(table_name = crate::schema::addresses)]
 pub struct NewAddress<'a> {
@@ -117,4 +91,28 @@ pub struct NewAddress<'a> {
     city: &'a str,
     state: &'a str,
     zipcode: i32,
+}
+
+impl<'a> NewAddress<'a> {
+    pub fn new<'b: 'a>(
+        Address {
+            name,
+            number,
+            street,
+            city,
+            state,
+            zipcode,
+        }: &'b Address,
+        order_id: i32,
+    ) -> Self {
+        Self {
+            name,
+            order_id,
+            number: *number as i32,
+            street,
+            city,
+            state,
+            zipcode: *zipcode as i32,
+        }
+    }
 }
