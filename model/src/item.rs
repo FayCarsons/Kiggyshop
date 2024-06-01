@@ -85,15 +85,25 @@ pub struct TableItem {
     pub quantity: i32,
 }
 
+#[inline(always)]
+fn price_from_kind(kind: Kind) -> u32 {
+    use Kind::*;
+    match kind {
+        BigPrint => 20_00,
+        SmallPrint => 7_00,
+        Button => 3_00,
+    }
+}
+
 impl Item {
-    #[must_use]
-    pub fn price(&self) -> i64 {
-        use Kind::*;
-        match self.kind {
-            BigPrint => 20,
-            SmallPrint => 7,
-            Button => 3,
-        }
+    pub fn price(&self) -> u32 {
+        price_from_kind(self.kind)
+    }
+}
+
+impl TableItem {
+    pub fn price(&self) -> u32 {
+        price_from_kind(Kind::from(self.kind))
     }
 }
 
@@ -104,4 +114,11 @@ pub struct NewItem<'a> {
     pub kind: i32,
     pub description: &'a str,
     pub quantity: i32,
+}
+
+#[derive(AsChangeset)]
+#[diesel(table_name = crate::schema::stock)]
+pub struct NewQuantity {
+    id: i32,
+    quantity: i32,
 }

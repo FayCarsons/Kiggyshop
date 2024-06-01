@@ -13,7 +13,7 @@ const VALID_STATES: [&str; 50] = [
     "WI", "WY",
 ];
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Address {
     pub name: String,
     pub number: StreetNumber,

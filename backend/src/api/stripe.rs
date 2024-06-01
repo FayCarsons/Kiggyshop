@@ -1,4 +1,5 @@
-use std::{borrow::Borrow, collections::HashMap, num::ParseIntError};
+use serde::{Deserialize, Serialize};
+use std::{borrow::Borrow, collections::HashMap, num::ParseIntError, sync::Arc};
 
 use actix_web::{
     error, post,
@@ -21,19 +22,35 @@ use stripe::{
 use crate::{
     api::{
         order::insert_order,
-        stock::{dec_items, item_from_db},
+        stock::{dec_items, get_title_map, get_total, item_from_db},
     },
+    mail,
     utils::print_red,
     DbPool, Env,
 };
 
-use model::{item::Item, CartMap, ItemId, Quantity};
+use model::{
+    address::Address,
+    item::{Item, TableItem},
+    CartMap, ItemId, Quantity,
+};
 
+use super::stock::get_matching_ids;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StripeItem {
+    pub title: String,
+    pub price: u32,
+    pub quantity: Quantity,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct UserData {
     pub name: String,
-    pub address: String,
+    pub address: Option<Address>,
     pub email: String,
-    pub cart: HashMap<ItemId, Quantity>,
+    pub total: u32,
+    pub cart: HashMap<ItemId, StripeItem>,
 }
 
 #[post("/checkout")]
@@ -42,33 +59,50 @@ pub async fn checkout(
     pool: web::Data<DbPool>,
     env: web::Data<Env<'_>>,
 ) -> Result<HttpResponse> {
-    let mut item_map = HashMap::<Item, Quantity>::new();
-    for (id, qty) in cart.iter() {
-        let item = item_from_db(*id, &pool).await?;
-        item_map.insert(item, *qty);
-    }
+    let ids = cart.keys().copied().collect::<Vec<ItemId>>();
+    let items = get_matching_ids(ids, pool.into_inner()).await?;
+    let item_map = items
+        .into_iter()
+        .map(|item| {
+            (
+                item.id as u32,
+                StripeItem {
+                    title: item.title.clone(),
+                    price: item.price(),
+                    quantity: *cart.get(&(item.id as u32)).unwrap(),
+                },
+            )
+        })
+        .collect::<HashMap<ItemId, StripeItem>>();
 
     let client = Client::new(env.stripe_secret);
 
     let mut product_price_pairs = Vec::<(Price, u64)>::with_capacity(item_map.keys().len());
 
-    for (item, qty) in &item_map {
-        let mut create_product = CreateProduct::new(&item.title);
-        create_product.description = Some(&item.description);
+    for (
+        _,
+        StripeItem {
+            title,
+            price,
+            quantity,
+        },
+    ) in &item_map
+    {
+        let create_product = CreateProduct::new(&title);
         let product = Product::create(&client, create_product)
             .await
             .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
         let mut create_price = CreatePrice::new(Currency::USD);
         create_price.product = Some(stripe::IdOrCreate::Id(&product.id));
-        create_price.unit_amount = Some(item.price() * 100);
+        create_price.unit_amount = Some(*price as i64);
         create_price.expand = &["product"];
 
         let price = Price::create(&client, create_price)
             .await
             .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
-        product_price_pairs.push((price, u64::from(*qty)));
+        product_price_pairs.push((price, u64::from(*quantity)));
     }
 
     let shipping = {
@@ -112,9 +146,10 @@ pub async fn checkout(
                 .collect::<Vec<_>>(),
         );
         create_payment_link.metadata = Some(
-            cart.iter()
-                .map(|(id, qty)| (id.to_string(), qty.to_string()))
-                .collect::<HashMap<String, String>>(),
+            item_map
+                .iter()
+                .map(|(id, item)| Ok((id.to_string(), serde_json::to_string(item)?)))
+                .collect::<Result<HashMap<String, String>, serde_json::error::Error>>()?,
         );
 
         create_payment_link.shipping_options = Some(vec![CreatePaymentLinkShippingOptions {
@@ -136,6 +171,8 @@ pub async fn checkout(
                 ],
             });
 
+        create_payment_link.customer_creation = Some(stripe::PaymentLinkCustomerCreation::Always);
+
         PaymentLink::create(&client, create_payment_link)
     }
     .await
@@ -152,9 +189,7 @@ pub async fn webhook_handler(
     pool: web::Data<DbPool>,
     env: web::Data<Env<'_>>,
 ) -> Result<HttpResponse> {
-    println!("INSERTING INTO DATABASE VIA STRIPE WEBHOOKS");
-
-    parse_webhook(req, payload, pool, env.clone())
+    parse_webhook(req, payload, pool.into_inner(), env.into_inner())
         .await
         .map(|_| HttpResponse::Ok().finish())
 }
@@ -163,72 +198,152 @@ pub async fn webhook_handler(
 pub async fn parse_webhook(
     req: HttpRequest,
     payload: web::Bytes,
-    pool: web::Data<DbPool>,
-    env: web::Data<Env<'_>>,
+    pool: Arc<DbPool>,
+    env: Arc<Env<'_>>,
 ) -> Result<()> {
     print_red("", "CURRENTLY IN 'handle_webhook'");
 
-    let payload_str = std::str::from_utf8(payload.borrow())
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+    let payload_str = std::str::from_utf8(payload.borrow()).map_err(|e| {
+        error::ErrorInternalServerError(format!("Stripe payload is not UTF-8: {e}"))
+    })?;
 
     let stripe_sig = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
 
-    if let Ok(event) = Webhook::construct_event(payload_str, stripe_sig, env.stripe_key) {
+    let event = Webhook::construct_event(payload_str, stripe_sig, env.stripe_key);
+
+    if let Ok(event) = event {
         if let EventType::CheckoutSessionCompleted = event.type_ {
             if let EventObject::CheckoutSession(session) = event.data.object {
-                handle_checkout(session, pool).await?;
+                handle_checkout(session, pool, &*env).await?;
             }
         }
     } else {
         print_red(
-            "",
-            "FAILED TO CONSTRUCT WEBHOOK EVENT, MAYHAPS UR KEY IS WRONG",
+            "FAILED TO CONSTRUCT WEBHOOK EVENT, IS YOUR KEY CORRECT?\nERROR_MESSSAGE:",
+            unsafe { &event.unwrap_err_unchecked() },
         );
     }
 
     Ok(())
 }
 
+fn make_address(stripe_address: stripe::Address, name: Arc<str>) -> Result<Address, String> {
+    let (number, street) = {
+        let full = stripe_address
+            .line1
+            .map(|line| line + &stripe_address.line2.unwrap_or_default())
+            .ok_or("No address field in order")?;
+        full.trim()
+            .split_once(" ")
+            .ok_or(format!("Malformed address: {full}"))
+            .and_then(|(number, name)| match str::parse::<u32>(number) {
+                Ok(num) => Ok((num, name.to_string())),
+                Err(e) => Err(format!("Invalid house number: {e}")),
+            })?
+    };
+
+    let zipcode = stripe_address
+        .postal_code
+        .ok_or("No zipcode specified foar order")
+        .and_then(|str| str::parse::<u32>(&str).map_err(|_| "Cannot parse zipcode"))?;
+
+    let address = Address {
+        number,
+        street,
+        city: stripe_address.city.unwrap_or("Not specified".to_string()),
+        state: stripe_address
+            .state
+            .unwrap_or("No state specified for order".to_string()),
+        zipcode,
+        name: name.to_string(),
+    };
+
+    Ok(address)
+}
+
 /// Takes data from completed checkout session, stores it in DB and updates stock
-async fn handle_checkout(session: stripe::CheckoutSession, pool: web::Data<DbPool>) -> Result<()> {
+// TODO: Add more advanced error handling, returning HTTP error response only if
+// critical failure occurs, otherwise filling unavailable fields with
+// "Not specified"
+async fn handle_checkout(
+    session: stripe::CheckoutSession,
+    pool: Arc<DbPool>,
+    env: &Env<'_>,
+) -> Result<()> {
     let shipping_info = session.shipping_details.unwrap();
     let Shipping { address, name, .. } = shipping_info;
 
-    let address = address.ok_or_else(|| {
+    // Collect user info - wrap everything in arc bc its all being passed to multiple async fns
+    let stripe_address = address.ok_or_else(|| {
         error::ErrorInternalServerError(format!(
             "Address not present in Stripe Order for {}",
             name.clone().unwrap_or(String::from("")),
         ))
     })?;
 
-    let name = name.ok_or(error::ErrorInternalServerError("No name for order"))?;
-
-    // Collecting user cart from session metadata
-    let cart = session.metadata.unwrap();
-    let cart = cart
-        .iter()
-        .map(|(id, qty)| {
-            let id = str::parse::<u32>(id)?;
-            let qty = str::parse::<u32>(qty)?;
-            Ok((id, qty))
-        })
-        .collect::<Result<CartMap, ParseIntError>>()
-        .map_err(|_| actix_web::error::ErrorInternalServerError("Cannot parse user cart"))?;
-
-    let cart_conn = pool.get().unwrap();
-    let stock_conn = pool.get().unwrap();
-    let order = insert_order(
-        cart_conn,
-        cart.clone(),
-        name,
-        session.customer_email,
-        address,
+    let name = Arc::<str>::from(
+        name.unwrap_or("Name not present in Stripe payload".to_string())
+            .as_str(),
     );
 
+    let email = Arc::<str>::from(
+        session
+            .customer_email
+            .unwrap_or("Not present".to_string())
+            .as_str(),
+    );
+
+    // Collecting user cart from session metadata
+    let cart = session.metadata.ok_or(error::ErrorBadRequest(
+        "Session metadata not present: need user cart",
+    ))?;
+
+    let cart = Arc::new(
+        cart.iter()
+            .map(|(id, item)| {
+                let id = str::parse::<u32>(id).map_err(|e| {
+                    error::ErrorInternalServerError(format!("Error parsing item id: {e}"))
+                })?;
+                let item = serde_json::from_str(item)?;
+                Ok((id, item))
+            })
+            .collect::<Result<HashMap<ItemId, StripeItem>, actix_web::Error>>()
+            .map_err(|_| actix_web::error::ErrorInternalServerError("Cannot parse user cart"))?,
+    );
+    let total = session
+        .amount_total
+        .map(|n| n as u32)
+        .unwrap_or_else(|| cart.clone().iter().map(|(_, item)| item.price).sum());
+    let subtotal = session.amount_subtotal;
+
+    #[cfg(debug_assertions)]
+    println!("Webhook endpoint received cart: {:#?}", cart);
+
+    let address = Arc::new(make_address(stripe_address, name.clone()).unwrap_or_default());
+
+    // Get DB connections
+    let cart_conn = pool
+        .get()
+        .map_err(|e| error::ErrorInternalServerError(format!("Cannot get DB connection: {e}")))?;
+    let stock_conn = pool
+        .get()
+        .map_err(|e| error::ErrorInternalServerError(format!("Cannot get DB connection: {e}")))?;
+
+    let user_data = UserData {
+        name: name.clone().to_string(),
+        address: Some((*address).clone()),
+        email: email.to_string(),
+        total,
+        cart: (*cart).clone(),
+    };
+
+    let order = insert_order(cart_conn, cart.clone(), total, name, email, address);
     let stock = dec_items(cart, stock_conn);
 
     order.await?;
     stock.await?;
+
+    mail::send::send_confirmation(env, user_data).await;
 
     print_red("", "WEBHOOK COMPLETED");
 
