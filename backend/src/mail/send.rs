@@ -9,14 +9,14 @@ use lettre::{
 use super::templates::{Confirmation, Template};
 use std::sync::Arc;
 
-pub async fn send_confirmation(user: UserData, mailer: Arc<Mailer>) -> Result<()> {
+pub async fn send_confirmation(user: UserData, mailer: Arc<Mailer>) -> Result<(), String> {
     let confirmation = Confirmation::from(&user);
     let html = SinglePart::html(confirmation.render().unwrap());
     let plaintext = SinglePart::plain(confirmation.render_plaintext());
 
     let email = Message::builder()
-        .from("kiggyshop@gmail.com".parse().unwrap())
-        .to(user.email.parse().unwrap())
+        .from("Kiggyshop <kiggyshop@gmail.com>".parse().unwrap())
+        .to("Kiggy <kristencrankin@gmail.com>".parse().unwrap())
         .subject("Thank you for your order!")
         .multipart(
             MultiPart::alternative()
@@ -26,10 +26,7 @@ pub async fn send_confirmation(user: UserData, mailer: Arc<Mailer>) -> Result<()
         .unwrap();
 
     match mailer.send(email).await {
-        Ok(_response) => Ok(()),
-        Err(_) => {
-            eprintln!("Fuck fuckf ufkcuf kcufjk cufkckfidsjg");
-            Ok(())
-        }
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string()),
     }
 }
