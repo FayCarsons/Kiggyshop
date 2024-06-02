@@ -1,8 +1,9 @@
+use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Borrow, collections::HashMap, num::ParseIntError, sync::Arc};
 
 use actix_web::{
-    error, post,
+    error, post, rt,
     web::{self, Json},
     HttpRequest, HttpResponse, Result,
 };
@@ -26,7 +27,7 @@ use crate::{
     },
     mail,
     utils::print_red,
-    DbPool, Env,
+    DbPool, Env, Mailer,
 };
 
 use model::{
@@ -183,13 +184,14 @@ pub async fn checkout(
 
 /// Receives (all) webhooks
 #[post("/stripe_webhooks")]
-pub async fn webhook_handler(
+pub async fn webhook(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
     env: web::Data<Env<'_>>,
+    mailer: web::Data<Mailer>,
 ) -> Result<HttpResponse> {
-    parse_webhook(req, payload, pool.into_inner(), env.into_inner())
+    parse_webhook(req, payload, pool.into_inner(), env.into_inner(), mailer)
         .await
         .map(|_| HttpResponse::Ok().finish())
 }
@@ -200,6 +202,7 @@ pub async fn parse_webhook(
     payload: web::Bytes,
     pool: Arc<DbPool>,
     env: Arc<Env<'_>>,
+    mailer: web::Data<Mailer>,
 ) -> Result<()> {
     print_red("", "CURRENTLY IN 'handle_webhook'");
 
@@ -214,7 +217,7 @@ pub async fn parse_webhook(
     if let Ok(event) = event {
         if let EventType::CheckoutSessionCompleted = event.type_ {
             if let EventObject::CheckoutSession(session) = event.data.object {
-                handle_checkout(session, pool, &*env).await?;
+                handle_checkout(session, pool, &*env, mailer.into_inner()).await?;
             }
         }
     } else {
@@ -269,6 +272,7 @@ async fn handle_checkout(
     session: stripe::CheckoutSession,
     pool: Arc<DbPool>,
     env: &Env<'_>,
+    mailer: Arc<Mailer>,
 ) -> Result<()> {
     let shipping_info = session.shipping_details.unwrap();
     let Shipping { address, name, .. } = shipping_info;
@@ -337,17 +341,30 @@ async fn handle_checkout(
         cart: (*cart).clone(),
     };
 
-    let order = insert_order(cart_conn, cart.clone(), total, name, email, address);
-    let stock = dec_items(cart, stock_conn);
+    let order = rt::spawn(insert_order(
+        cart_conn,
+        cart.clone(),
+        total,
+        name,
+        email,
+        address,
+    ));
+    let stock = rt::spawn(dec_items(cart, stock_conn));
+    let confirmation = rt::spawn(mail::send::send_confirmation(user_data, mailer));
 
-    order.await?;
-    stock.await?;
-
-    mail::send::send_confirmation(env, user_data).await;
-
-    print_red("", "WEBHOOK COMPLETED");
-
-    Ok(())
+    // TODO: Improve w exponential backoff
+    match (order.await, stock.await, confirmation.await) {
+        (Err(e), _, _) => Err(error::ErrorInternalServerError(format!(
+            "Saving order failed: {e}"
+        ))),
+        (_, Err(e), _) => Err(error::ErrorInternalServerError(format!(
+            "Updating stock failed: {e}"
+        ))),
+        (_, _, Err(e)) => Err(error::ErrorInternalServerError(format!(
+            "Sending confirmation email failed: {e}"
+        ))),
+        _ => Ok(()),
+    }
 }
 
 fn get_header_value<'b>(req: &'b HttpRequest, key: &'b str) -> Option<&'b str> {

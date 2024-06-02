@@ -4,8 +4,8 @@ pub struct Env<'a> {
     pub stripe_secret: &'a str,
     pub stripe_key: &'a str,
     pub completion_redirect: &'a str,
-    pub mailgun_user: &'a str,
-    pub mailgun_pass: &'a str,
+    pub mail_user: &'a str,
+    pub mail_pass: &'a str,
 }
 
 impl Env<'static> {
@@ -17,15 +17,15 @@ impl Env<'static> {
             let stripe_secret = dotenvy_macro::dotenv!("STRIPE_SECRET");
             let stripe_key = dotenvy_macro::dotenv!("STRIPE_KEY");
             let completion_redirect = dotenvy_macro::dotenv!("COMPLETION_REDIRECT");
-            let mailgun_user = dotenvy_macro::dotenv!("MAILGUN_USER");
-            let mailgun_pass = dotenvy_macro::dotenv!("MAILGUN_PASS");
+            let mail_user = dotenvy_macro::dotenv!("MAIL_USER");
+            let mail_pass = dotenvy_macro::dotenv!("MAIL_PASS");
             Ok(Self {
                 database_url,
                 stripe_secret,
                 stripe_key,
                 completion_redirect,
-                mailgun_user,
-                mailgun_pass,
+                mail_user,
+                mail_pass,
             })
         }
         #[cfg(not(any(debug_assertions, test)))]
@@ -35,15 +35,15 @@ impl Env<'static> {
             let stripe_secret = std::env!("STRIPE_SECRET");
             let stripe_key = std::env!("STRIPE_KEY");
             let completion_redirect = std::env!("COMPLETION_REDIRECT");
-            let mailgun_user = std::env!("MAILGUN_USER");
-            let mailgun_pass = std::env!("MAILGUN_PASS");
+            let mail_user = std::env!("MAIL_USER");
+            let mail_pass = std::env!("MAIL_PASS");
             Ok(Self {
                 database_url,
                 stripe_secret,
                 stripe_key,
                 completion_redirect,
-                mailgun_user,
-                mailgun_pass,
+                mail_user,
+                mail_pass,
             })
         }
     }

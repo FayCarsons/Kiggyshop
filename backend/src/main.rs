@@ -8,7 +8,7 @@ mod utils;
 use crate::api::{
     order::{delete_order, get_orders, orders_fulfilled},
     stock::{delete_items, get_item, get_stock, put_item, update_item},
-    stripe::{checkout, webhook_handler},
+    stripe::{checkout, webhook},
 };
 
 use env::Env;
@@ -16,7 +16,10 @@ use env::Env;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 
 use diesel::{r2d2, SqliteConnection};
+use lettre::{transport::smtp::authentication::Credentials, AsyncSmtpTransport, Tokio1Executor};
+
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
+pub type Mailer = AsyncSmtpTransport<Tokio1Executor>;
 
 const ADDRESS_PORT: (&str, u16) = ("0.0.0.0", 3000);
 
@@ -31,6 +34,27 @@ async fn main() -> Result<(), std::io::Error> {
         .build(manager)
         .expect("INVALID DB URL // DB POOL CANNOT BE BUILT");
 
+    let (mail_user, mail_pass) = {
+        #[cfg(any(debug_assertions, test))]
+        {
+            (
+                dotenvy_macro::dotenv!("MAIL_USER"),
+                dotenvy_macro::dotenv!("MAIL_PASS"),
+            )
+        }
+
+        #[cfg(not(any(debug_assertions, test)))]
+        {
+            (std::env!("MAIL_USER"), std::env!("MAIL_PASS"))
+        }
+    };
+
+    let creds = Credentials::new(mail_user.to_string(), mail_pass.to_string());
+    let mailer: Mailer = Mailer::starttls_relay("smtp.gmail.com")
+        .unwrap()
+        .credentials(creds)
+        .build();
+
     HttpServer::new(move || {
         let logger = Logger::default();
 
@@ -38,6 +62,7 @@ async fn main() -> Result<(), std::io::Error> {
             .wrap(logger)
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(env.clone()))
+            .app_data(web::Data::new(mailer.clone()))
             .service(
                 web::scope("/api")
                     .service(get_stock)
@@ -48,10 +73,9 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(get_item)
                     .service(put_item)
                     .service(delete_items)
-                    .service(checkout)
-                    .service(webhook_handler),
+                    .service(checkout),
             )
-            .service(webhook_handler)
+            .service(webhook)
     })
     .bind(ADDRESS_PORT)?
     .run()

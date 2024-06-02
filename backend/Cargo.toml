@@ -30,6 +30,12 @@ dotenvy_macro = "0.15.7"
 awc = { version = "3.5.0", features = ["rustls"] }
 actix-extras = "0.1.0"
 askama = "0.12.1"
+lettre = { version = "0.11.7", default-features = false, features = [
+  "tokio1-rustls-tls",
+  "builder",
+  "smtp-transport",
+] }
+lettre_email = "0.9.4"
 
 [profile.test]
 debug-assertions = false
