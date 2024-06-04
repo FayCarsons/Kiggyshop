@@ -42,6 +42,19 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    users (id) {
+        id -> Nullable<Integer>,
+        ip -> Text,
+        user_agent -> Nullable<Text>,
+        device -> Text,
+        time -> Nullable<Timestamp>,
+        country -> Text,
+        state -> Text,
+        city -> Nullable<Text>,
+    }
+}
+
 diesel::joinable!(addresses -> orders (order_id));
 diesel::joinable!(carts -> orders (order_id));
 diesel::joinable!(carts -> stock (item_id));
@@ -51,4 +64,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     carts,
     orders,
     stock,
+    users,
 );

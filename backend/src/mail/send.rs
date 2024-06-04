@@ -16,7 +16,7 @@ pub async fn send_confirmation(user: UserData, mailer: Arc<Mailer>) -> Result<()
 
     let email = Message::builder()
         .from("Kiggyshop <kiggyshop@gmail.com>".parse().unwrap())
-        .to("Kiggy <kristencrankin@gmail.com>".parse().unwrap())
+        .to("Fay <faycarsons23@gmail.com>".parse().unwrap())
         .subject("Thank you for your order!")
         .multipart(
             MultiPart::alternative()

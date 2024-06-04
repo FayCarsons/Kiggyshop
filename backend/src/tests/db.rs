@@ -7,7 +7,7 @@ mod tests {
         dsl::count, query_dsl::methods::SelectDsl, ExpressionMethods, QueryDsl, RunQueryDsl,
     };
     use model::{
-        cart::{Cart, NewCart},
+        cart::NewCart,
         item::{Item, NewItem},
         order::{NewOrder, Order},
     };

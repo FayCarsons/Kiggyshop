@@ -5,7 +5,7 @@ mod tests {
 
     use crate::{
         api::{
-            order::{self, delete_order},
+            order::{delete_order},
             stock::get_stock,
         },
         tests::test_db,
@@ -13,7 +13,7 @@ mod tests {
     use actix_web::{test, web, App};
     use diesel::SqliteConnection;
     use model::{
-        item::{Item, NewItem, TableItem},
+        item::{Item, NewItem},
         order::{NewOrder, Order},
         ItemId,
     };

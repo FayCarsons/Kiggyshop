@@ -5,7 +5,7 @@ use crate::api::stripe::{StripeItem, UserData};
 
 pub struct Item {
     title: String,
-    price: f32,
+    price: f64,
     quantity: u32,
     total: u32,
 }
@@ -15,7 +15,7 @@ impl From<(&model::item::Item, &Quantity)> for Item {
         let price = item.price();
         Self {
             title: item.title.clone(),
-            price: price as f32 / 1000.,
+            price: price as f64 / 100f64,
             quantity: *quantity,
             total: price * quantity,
         }
@@ -27,7 +27,7 @@ impl From<(&model::item::Item, &Quantity)> for Item {
 pub struct Confirmation {
     name: String,
     address: String,
-    total: f32,
+    total: f64,
     cart: Vec<Item>,
 }
 
@@ -35,13 +35,18 @@ impl Confirmation {
     pub fn render_plaintext(&self) -> String {
         let Confirmation {
             name,
-            address,
-            total,
+            total: order_total,
             cart,
+            ..
         } = self;
 
+        let title = "Title";
+        let price = "Price";
+        let quantity = "Quantity";
+        let total = "Total";
+
         let [title_width, price_width, quantity_width, total_width] = cart.iter().fold(
-            [5, 5, 8, 5],
+            [title.len(), price.len(), quantity.len(), total.len()],
             |mut acc,
              Item {
                  title,
@@ -90,7 +95,7 @@ impl Confirmation {
 
         let order_details = cart
         .iter()
-        .fold(format!("{separator}\n{header}"),
+        .fold(format!("{separator}\n{header}\n"),
             |mut acc, Item {
                  title,
                  price,
@@ -106,20 +111,14 @@ impl Confirmation {
 
         let total_box = format!(
             "{separator}\n| {:>total_width$} |\n{separator}",
-            String::from("Total: ") + &total.to_string(),
-            total_width = title_width + price_width + quantity_width + total_width
+            String::from("Total: ") + &order_total.to_string(),
+            total_width = [title_width, price_width, quantity_width, total_width]
+                .into_iter()
+                .sum()
         );
 
         format!(
-            r#"
-        Thank you {name}!
-
-        We appreciate your support! Your order is currently being processed, a 
-        shipping confirmation will be sent shortly.
-
-        {order_details}
-        {total_box}
-    "#
+            "Thank you {name}!\n\nWe appreciate your support! Your order is currently being processed, a shipping confirmation will be sent shortly.\n\n{order_details}\n{total_box}"
         )
     }
 }
@@ -146,7 +145,7 @@ impl From<&UserData> for Confirmation {
                     },
                 )| Item {
                     title: title.clone(),
-                    price: (*price as f32) / 100.,
+                    price: (*price as f64) / 100f64,
                     quantity: *quantity,
                     total: *total,
                 },
@@ -161,7 +160,7 @@ impl From<&UserData> for Confirmation {
         Confirmation {
             name: name.clone(),
             address,
-            total: (*total as f32) / 100.,
+            total: (*total as f64) / 100f64,
             cart,
         }
     }

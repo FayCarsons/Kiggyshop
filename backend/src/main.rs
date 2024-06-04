@@ -15,10 +15,14 @@ use env::Env;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 
-use diesel::{r2d2, SqliteConnection};
+use diesel::{
+    r2d2::{self, ConnectionManager},
+    SqliteConnection,
+};
 use lettre::{transport::smtp::authentication::Credentials, AsyncSmtpTransport, Tokio1Executor};
 
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
+pub type DbConn = r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
 pub type Mailer = AsyncSmtpTransport<Tokio1Executor>;
 
 const ADDRESS_PORT: (&str, u16) = ("0.0.0.0", 3000);

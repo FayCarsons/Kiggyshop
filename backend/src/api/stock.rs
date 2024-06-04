@@ -1,6 +1,6 @@
 use model::{
-    item::{self, Item, NewItem, NewQuantity, TableItem},
-    schema::{self, stock},
+    item::{self, Item, NewItem, TableItem},
+    schema::stock,
     CartMap, ItemId,
 };
 
@@ -14,6 +14,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use diesel::{prelude::*, r2d2::ConnectionManager};
 
+use super::metrics::log_user;
 use crate::DbPool;
 
 use super::stripe::StripeItem;
@@ -54,7 +55,7 @@ pub async fn get_total(cart: Arc<CartMap>, pool: Arc<DbPool>) -> Result<u32> {
     .map_err(|e| error::ErrorInternalServerError(format!("<fn GET_TOTAL>\n{e}")))?;
 
     let id_kind_map = HashMap::<i32, i32>::from_iter(id_kind_pairs.into_iter());
-    Ok(cart.iter().try_fold(0, |total, (id, qty)| {
+    cart.iter().try_fold(0, |total, (id, qty)| {
         if let Some(kind) = id_kind_map.get(&(*id as i32)) {
             let price = match item::Kind::from(*kind) {
                 item::Kind::BigPrint => 20_00,
@@ -67,7 +68,7 @@ pub async fn get_total(cart: Arc<CartMap>, pool: Arc<DbPool>) -> Result<u32> {
                 "<fn GET_TOTAL>\nError fetching total - Item in cart not present in kind map",
             ))
         }
-    })?)
+    })
 }
 
 #[get("/stock/{item_id}")]
@@ -79,22 +80,33 @@ pub async fn get_item(item_id: Path<u32>, pool: web::Data<DbPool>) -> Result<web
 }
 
 #[get("/stock")]
-pub async fn get_stock(pool: web::Data<DbPool>) -> Result<HttpResponse> {
-    let stock = web::block(move || {
-        let mut conn = pool.get().map_err(|_| "couldn't get db connection")?;
-        stock::table
-            .select(TableItem::as_select())
-            .get_results::<TableItem>(&mut conn)
-            .map_err(|e| format!("Cannot fetch stock: {e}"))
-    })
-    .await?
-    .map_err(error::ErrorInternalServerError)?;
+pub async fn get_stock(
+    req: actix_web::HttpRequest,
+    pool: web::Data<DbPool>,
+) -> Result<HttpResponse> {
+    let stock = {
+        let mut stock_conn = pool
+            .get()
+            .map_err(|e| error::ErrorInternalServerError(format!("Cannot connect to DB: {e}")))?;
+        web::block(move || {
+            stock::table
+                .select(TableItem::as_select())
+                .get_results::<TableItem>(&mut stock_conn)
+                .map_err(|e| format!("Cannot fetch stock: {e}"))
+        })
+        .await?
+        .map_err(error::ErrorInternalServerError)?
+    };
 
     let stock = stock
         .into_iter()
         .map(|item| (item.id as u32, Item::from(item)))
         .collect::<HashMap<u32, Item>>();
     let ser = to_string(&stock)?;
+
+    if let Ok(metrics_conn) = pool.get() {
+        actix_web::rt::spawn(log_user(req, metrics_conn));
+    }
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -229,7 +241,7 @@ pub async fn get_title_map(cart: Arc<CartMap>, pool: DbPool) -> Result<HashMap<I
         Ok(id_title_map)
     })
     .await?
-    .map_err(|e| error::ErrorInternalServerError(e))
+    .map_err(error::ErrorInternalServerError)
 }
 
 pub async fn get_matching_ids(ids: Vec<u32>, pool: Arc<DbPool>) -> Result<Vec<TableItem>> {

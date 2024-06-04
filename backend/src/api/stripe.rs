@@ -1,6 +1,5 @@
-use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use serde::{Deserialize, Serialize};
-use std::{borrow::Borrow, collections::HashMap, num::ParseIntError, sync::Arc};
+use std::{borrow::Borrow, collections::HashMap, sync::Arc};
 
 use actix_web::{
     error, post, rt,
@@ -21,20 +20,13 @@ use stripe::{
 };
 
 use crate::{
-    api::{
-        order::insert_order,
-        stock::{dec_items, get_title_map, get_total, item_from_db},
-    },
+    api::{order::insert_order, stock::dec_items},
     mail,
     utils::print_red,
     DbPool, Env, Mailer,
 };
 
-use model::{
-    address::Address,
-    item::{Item, TableItem},
-    CartMap, ItemId, Quantity,
-};
+use model::{address::Address, ItemId, Quantity};
 
 use super::stock::get_matching_ids;
 
@@ -80,16 +72,13 @@ pub async fn checkout(
 
     let mut product_price_pairs = Vec::<(Price, u64)>::with_capacity(item_map.keys().len());
 
-    for (
-        _,
-        StripeItem {
-            title,
-            price,
-            quantity,
-        },
-    ) in &item_map
+    for StripeItem {
+        title,
+        price,
+        quantity,
+    } in item_map.values()
     {
-        let create_product = CreateProduct::new(&title);
+        let create_product = CreateProduct::new(title);
         let product = Product::create(&client, create_product)
             .await
             .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
@@ -217,7 +206,7 @@ pub async fn parse_webhook(
     if let Ok(event) = event {
         if let EventType::CheckoutSessionCompleted = event.type_ {
             if let EventObject::CheckoutSession(session) = event.data.object {
-                handle_checkout(session, pool, &*env, mailer.into_inner()).await?;
+                handle_checkout(session, pool, &env, mailer.into_inner()).await?;
             }
         }
     } else {

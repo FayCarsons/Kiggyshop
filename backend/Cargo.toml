@@ -36,6 +36,7 @@ lettre = { version = "0.11.7", default-features = false, features = [
   "smtp-transport",
 ] }
 lettre_email = "0.9.4"
+chrono = { version = "0.4.38", features = ["serde"] }
 
 [profile.test]
 debug-assertions = false

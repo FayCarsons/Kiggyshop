@@ -1,16 +1,12 @@
 use std::sync::Arc;
 
-use lettre::{transport::smtp::authentication::Credentials, AsyncSmtpTransport, Tokio1Executor};
+use lettre::transport::smtp::authentication::Credentials;
 use model::order::Order;
 
 use crate::{
-    api::{
-        stock::item_from_db,
-        stripe::{StripeItem, UserData},
-    },
+    api::stripe::{StripeItem, UserData},
     mail::{
         self,
-        templates::{Confirmation, Item},
     },
     Mailer,
 };

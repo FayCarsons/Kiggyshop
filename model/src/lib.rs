@@ -3,6 +3,7 @@ pub mod cart;
 pub mod item;
 pub mod order;
 pub mod schema;
+pub mod user;
 
 // Types follow a pattern of:
 // {Name} -> struct for business logic, uses ideal types and is therefore safer
