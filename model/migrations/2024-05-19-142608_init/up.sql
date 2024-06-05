@@ -1,4 +1,4 @@
-create table if not exists stock (
+create table stock (
   id integer primary key,
   title text unique not null,
   kind text not null,
@@ -6,7 +6,7 @@ create table if not exists stock (
   quantity integer not null
 );
 
-create table if not exists carts (
+create table carts (
   id integer primary key,
   order_id integer not null,
   item_id text not null,
@@ -14,7 +14,7 @@ create table if not exists carts (
   foreign key (order_id) references orders (id)
 );
 
-create table if not exists orders (
+create table orders (
   id integer primary key,
   name text not null,
   street text not null,

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::address::Address;
 
 use super::CartMap;
@@ -12,6 +14,7 @@ pub struct Order {
     pub cart: CartMap,
     pub address: Address,
     pub shipped: bool,
+    pub tracking_number: Option<String>,
 }
 
 #[derive(
@@ -19,11 +22,12 @@ pub struct Order {
 )]
 #[diesel(table_name = crate::schema::orders)]
 pub struct TableOrder {
-    pub id: i32,
+    id: i32,
     name: String,
     email: String,
     total: i32,
     shipped: bool,
+    tracking_number: Option<String>,
 }
 
 #[derive(Insertable)]
@@ -33,6 +37,7 @@ pub struct NewOrder<'a> {
     pub email: &'a str,
     pub total: i32,
     pub shipped: bool,
+    pub tracking_number: Option<Cow<'a, str>>,
 }
 
 impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
@@ -42,6 +47,7 @@ impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
             email,
             total,
             shipped,
+            tracking_number,
             ..
         }: &'b Order,
     ) -> Self {
@@ -50,6 +56,7 @@ impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
             email,
             total: *total as i32,
             shipped: *shipped,
+            tracking_number: tracking_number.as_deref().map(Cow::Borrowed),
         }
     }
 }

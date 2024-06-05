@@ -26,4 +26,3 @@ create table if not exists orders (
   zipcode text not null,
   fulfilled integer not null
 );
-

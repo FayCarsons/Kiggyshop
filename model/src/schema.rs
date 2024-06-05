@@ -29,6 +29,7 @@ diesel::table! {
         email -> Text,
         total -> Integer,
         shipped -> Bool,
+        tracking_number -> Nullable<Text>,
     }
 }
 
