@@ -1,6 +1,9 @@
 use actix_web::{delete, error, get, put, web, HttpResponse, Result};
-use diesel::{prelude::*, r2d2::ConnectionManager};
-use model::{address, cart, order, schema, schema::orders};
+use diesel::prelude::*;
+use model::{
+    address, cart, order,
+    schema::{addresses, carts, orders},
+};
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -44,7 +47,7 @@ pub async fn get_orders(
 pub async fn order_shipped(
     pool: web::Data<DbPool>,
     order_id: web::Path<u32>,
-    _tracking_number: web::Bytes,
+    tracking_number: web::Bytes,
 ) -> Result<HttpResponse> {
     let mut conn = pool
         .into_inner()
@@ -56,7 +59,12 @@ pub async fn order_shipped(
         match diesel::update(orders::table)
             .filter(orders::id.eq(id))
             .filter(orders::shipped.eq(false))
-            .set(orders::shipped.eq(true))
+            .set((
+                orders::shipped.eq(true),
+                orders::tracking_number.eq(String::from_iter(
+                    tracking_number.into_iter().map(char::from),
+                )),
+            ))
             .execute(&mut conn)
         {
             Ok(0usize) => Err("Error: Order has already been shipped/ID is invalid"),
@@ -69,40 +77,8 @@ pub async fn order_shipped(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[put("/orders/fulfilled")]
-pub async fn orders_fulfilled(
-    pool: web::Data<DbPool>,
-    fulfilled_orders: web::Json<Vec<order::TableOrder>>,
-) -> Result<HttpResponse> {
-    let mut conn = pool
-        .get()
-        .map_err(|e| error::ErrorInternalServerError(format!("Cannot connect to database: {e}")))?;
-
-    let ids = fulfilled_orders
-        .into_inner()
-        .into_iter()
-        .map(|order::TableOrder { id, .. }| id)
-        .collect::<Vec<i32>>();
-
-    web::block(move || {
-        diesel::update(orders::table.filter(orders::id.eq_any(ids)))
-            .set(orders::shipped.eq(true))
-            .execute(&mut conn)
-    })
-    .await
-    .map(|e| match e {
-        Ok(_) => Ok(()),
-        Err(err) => Err(error::ErrorInternalServerError(format!(
-            "Cannot update DB: {err}"
-        ))),
-    })??;
-
-    Ok(HttpResponse::Ok().finish())
-}
-
 #[delete("/orders/{id}")]
 pub async fn delete_order(pool: web::Data<DbPool>, id: web::Path<i32>) -> Result<HttpResponse> {
-    use model::schema::orders;
     let id = id.into_inner();
 
     web::block(move || {
@@ -127,13 +103,10 @@ pub async fn insert_order(
     address: Arc<address::Address>,
 ) -> Result<()> {
     web::block(move || -> std::result::Result<(), String> {
-        use model::schema::{addresses, carts, orders};
-
         let order = order::NewOrder {
             name: &name,
             total: total as i32,
             email: &email,
-            shipped: false,
         };
 
         let order_id = diesel::insert_into(orders::table)

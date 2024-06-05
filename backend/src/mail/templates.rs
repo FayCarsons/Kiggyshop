@@ -3,6 +3,7 @@ use model::Quantity;
 
 use crate::api::stripe;
 use model::item;
+
 pub struct Item {
     title: String,
     price: f64,
@@ -26,6 +27,9 @@ impl From<(&item::Item, &Quantity)> for Item {
 #[template(path = "./confirmation.html")]
 pub struct Confirmation {
     name: String,
+    #[allow(unused)]
+    // NOTE: address not currently used, email should echo address back to user
+    // sso they can verify it
     address: String,
     total: f64,
     cart: Vec<Item>,

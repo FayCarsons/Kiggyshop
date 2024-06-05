@@ -4,10 +4,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        api::{
-            order::{delete_order},
-            stock::get_stock,
-        },
+        api::{order::delete_order, stock::get_stock},
         tests::test_db,
     };
     use actix_web::{test, web, App};
@@ -71,7 +68,6 @@ mod tests {
                 name: &name,
                 total: 30_00,
                 email: "",
-                shipped: false,
             }])
             .execute(&mut conn)
             .expect("Cannot insert mock order into DB");

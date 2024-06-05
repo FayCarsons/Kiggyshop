@@ -36,27 +36,18 @@ pub struct NewOrder<'a> {
     pub name: &'a str,
     pub email: &'a str,
     pub total: i32,
-    pub shipped: bool,
-    pub tracking_number: Option<Cow<'a, str>>,
 }
 
 impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
     fn from(
         Order {
-            name,
-            email,
-            total,
-            shipped,
-            tracking_number,
-            ..
+            name, email, total, ..
         }: &'b Order,
     ) -> Self {
         Self {
             name,
             email,
             total: *total as i32,
-            shipped: *shipped,
-            tracking_number: tracking_number.as_deref().map(Cow::Borrowed),
         }
     }
 }
