@@ -81,7 +81,6 @@ pub struct TableItem {
     pub title: String,
     pub kind: i32,
     pub description: String,
-    /// Must be named quantity to prevent SQL naming issues, represents # of item in stock
     pub quantity: i32,
 }
 
@@ -114,11 +113,4 @@ pub struct NewItem<'a> {
     pub kind: i32,
     pub description: &'a str,
     pub quantity: i32,
-}
-
-#[derive(AsChangeset)]
-#[diesel(table_name = crate::schema::stock)]
-pub struct NewQuantity {
-    id: i32,
-    quantity: i32,
 }

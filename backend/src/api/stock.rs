@@ -1,7 +1,6 @@
 use model::{item, schema::stock};
 
 use actix_web::{delete, error, get, put, web, HttpResponse, Result};
-use serde_json::to_string;
 use std::{collections::HashMap, sync::Arc};
 
 use diesel::{prelude::*, r2d2::ConnectionManager};

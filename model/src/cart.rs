@@ -1,4 +1,4 @@
-use crate::{CartMap, ItemId, Quantity};
+use crate::{ItemId, Quantity};
 
 use super::schema;
 use diesel::prelude::*;

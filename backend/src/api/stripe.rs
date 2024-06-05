@@ -43,6 +43,7 @@ pub struct UserData {
     pub address: Option<Address>,
     pub email: String,
     pub total: u32,
+    pub subtotal: u32,
     pub cart: HashMap<ItemId, Item>,
 }
 
@@ -206,7 +207,7 @@ pub async fn parse_webhook(
     if let Ok(event) = event {
         if let EventType::CheckoutSessionCompleted = event.type_ {
             if let EventObject::CheckoutSession(session) = event.data.object {
-                handle_checkout(session, pool, &env, mailer.into_inner()).await?;
+                handle_checkout(session, pool, mailer.into_inner()).await?;
             }
         }
     } else {
@@ -260,7 +261,6 @@ fn make_address(stripe_address: stripe::Address, name: Arc<str>) -> Result<Addre
 async fn handle_checkout(
     session: stripe::CheckoutSession,
     pool: Arc<DbPool>,
-    env: &Env<'_>,
     mailer: Arc<Mailer>,
 ) -> Result<()> {
     let shipping_info = session.shipping_details.unwrap();
@@ -307,7 +307,7 @@ async fn handle_checkout(
         .amount_total
         .map(|n| n as u32)
         .unwrap_or_else(|| cart.clone().iter().map(|(_, item)| item.price).sum());
-    let subtotal = session.amount_subtotal;
+    let subtotal = session.amount_subtotal.unwrap_or_default() as u32;
 
     #[cfg(debug_assertions)]
     println!("Webhook endpoint received cart: {:#?}", cart);
@@ -327,6 +327,7 @@ async fn handle_checkout(
         address: Some((*address).clone()),
         email: email.to_string(),
         total,
+        subtotal,
         cart: (*cart).clone(),
     };
 

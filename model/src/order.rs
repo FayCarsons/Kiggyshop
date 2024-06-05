@@ -1,6 +1,4 @@
-use std::borrow::Cow;
-
-use crate::address::Address;
+use crate::address;
 
 use super::CartMap;
 use diesel::prelude::*;
@@ -12,7 +10,7 @@ pub struct Order {
     pub email: String,
     pub total: u32,
     pub cart: CartMap,
-    pub address: Address,
+    pub address: address::Address,
     pub shipped: bool,
     pub tracking_number: Option<String>,
 }
