@@ -1,8 +1,8 @@
 pub use askama::Template;
 use model::Quantity;
 
-use crate::api::stripe::{StripeItem, UserData};
-
+use crate::api::stripe;
+use model::item;
 pub struct Item {
     title: String,
     price: f64,
@@ -10,8 +10,8 @@ pub struct Item {
     total: u32,
 }
 
-impl From<(&model::item::Item, &Quantity)> for Item {
-    fn from((item, quantity): (&model::item::Item, &Quantity)) -> Self {
+impl From<(&item::Item, &Quantity)> for Item {
+    fn from((item, quantity): (&item::Item, &Quantity)) -> Self {
         let price = item.price();
         Self {
             title: item.title.clone(),
@@ -123,22 +123,22 @@ impl Confirmation {
     }
 }
 
-impl From<&UserData> for Confirmation {
+impl From<&stripe::UserData> for Confirmation {
     fn from(
-        UserData {
+        stripe::UserData {
             name,
             address,
             total,
             cart,
             ..
-        }: &UserData,
+        }: &stripe::UserData,
     ) -> Self {
         let cart = cart
             .iter()
             .map(
                 |(
                     _,
-                    StripeItem {
+                    stripe::Item {
                         title,
                         price,
                         quantity,

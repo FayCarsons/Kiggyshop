@@ -1,25 +1,22 @@
 use std::sync::Arc;
 
 use lettre::transport::smtp::authentication::Credentials;
-use model::order::Order;
+use model::{item, order};
 
 use crate::{
-    api::stripe::{StripeItem, UserData},
-    mail::{
-        self,
-    },
+    api::stripe,
+    mail::{self},
     Mailer,
 };
 
 #[actix_web::test]
 async fn test_confirmation_email() {
-    let order = serde_json::from_slice::<Order>(include_bytes!("mock_order.json")).unwrap();
+    let order = serde_json::from_slice::<order::Order>(include_bytes!("mock_order.json")).unwrap();
 
     let items =
-        serde_json::from_slice::<Vec<model::item::Item>>(include_bytes!("../../stock.json"))
-            .unwrap();
+        serde_json::from_slice::<Vec<item::Item>>(include_bytes!("../../stock.json")).unwrap();
 
-    let Order {
+    let order::Order {
         name,
         email,
         total,
@@ -35,7 +32,7 @@ async fn test_confirmation_email() {
 
             (
                 *id,
-                StripeItem {
+                stripe::Item {
                     price,
                     title: items[*id as usize].title.clone(),
                     quantity: *qty,
@@ -44,7 +41,7 @@ async fn test_confirmation_email() {
         })
         .collect();
 
-    let user = UserData {
+    let user = stripe::UserData {
         name,
         address: Some(address),
         email,

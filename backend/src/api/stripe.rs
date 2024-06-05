@@ -31,7 +31,7 @@ use model::{address::Address, ItemId, Quantity};
 use super::stock::get_matching_ids;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StripeItem {
+pub struct Item {
     pub title: String,
     pub price: u32,
     pub quantity: Quantity,
@@ -43,7 +43,7 @@ pub struct UserData {
     pub address: Option<Address>,
     pub email: String,
     pub total: u32,
-    pub cart: HashMap<ItemId, StripeItem>,
+    pub cart: HashMap<ItemId, Item>,
 }
 
 #[post("/checkout")]
@@ -59,20 +59,20 @@ pub async fn checkout(
         .map(|item| {
             (
                 item.id as u32,
-                StripeItem {
+                Item {
                     title: item.title.clone(),
                     price: item.price(),
                     quantity: *cart.get(&(item.id as u32)).unwrap(),
                 },
             )
         })
-        .collect::<HashMap<ItemId, StripeItem>>();
+        .collect::<HashMap<ItemId, Item>>();
 
     let client = Client::new(env.stripe_secret);
 
     let mut product_price_pairs = Vec::<(Price, u64)>::with_capacity(item_map.keys().len());
 
-    for StripeItem {
+    for Item {
         title,
         price,
         quantity,
@@ -300,7 +300,7 @@ async fn handle_checkout(
                 let item = serde_json::from_str(item)?;
                 Ok((id, item))
             })
-            .collect::<Result<HashMap<ItemId, StripeItem>, actix_web::Error>>()
+            .collect::<Result<HashMap<ItemId, Item>, actix_web::Error>>()
             .map_err(|_| actix_web::error::ErrorInternalServerError("Cannot parse user cart"))?,
     );
     let total = session
