@@ -2,7 +2,6 @@ use actix_web::{delete, error, get, put, web, HttpResponse, Result};
 use diesel::{prelude::*, r2d2::ConnectionManager};
 use model::{address, cart, order, schema, schema::orders};
 
-use r2d2::PooledConnection;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{DbConn, DbPool};
@@ -39,6 +38,35 @@ pub async fn get_orders(
 
     let json = serde_json::to_string(&orders)?;
     Ok(HttpResponse::Ok().content_type("text/json").body(json))
+}
+
+#[put("/orders/shipped")]
+pub async fn order_shipped(
+    pool: web::Data<DbPool>,
+    order_id: web::Path<u32>,
+    _tracking_number: web::Bytes,
+) -> Result<HttpResponse> {
+    let mut conn = pool
+        .into_inner()
+        .get()
+        .map_err(|e| error::ErrorInternalServerError(format!("Cannot connect to DB: {e}")))?;
+
+    let id = order_id.into_inner() as i32;
+    web::block(move || {
+        match diesel::update(orders::table)
+            .filter(orders::id.eq(id))
+            .filter(orders::shipped.eq(false))
+            .set(orders::shipped.eq(true))
+            .execute(&mut conn)
+        {
+            Ok(0usize) => Err("Error: Order has already been shipped/ID is invalid"),
+            _ => Ok(()),
+        }
+    })
+    .await?
+    .map_err(error::ErrorBadRequest)?;
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[put("/orders/fulfilled")]
