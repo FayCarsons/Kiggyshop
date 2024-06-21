@@ -14,7 +14,7 @@ bench = false
 actix-web = "4.6.0"
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = "1.0.117"
-diesel = { version = "2.1.6", features = [
+diesel = { version = "2.2.1", features = [
   "sqlite",
   "returning_clauses_for_sqlite_3_35",
   "r2d2",
