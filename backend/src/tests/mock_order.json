@@ -1,17 +1,18 @@
 {
-  "name": "Fay Carsons",
-  "email": "FayCarsons23@gmail.com",
+  "id": 1,
+  "name": "foobar",
+  "email": "null@google.com",
   "total": 23,
   "cart": {
     "0": 10,
     "1": 20
   },
   "address": {
-    "name": "Fay",
+    "name": "foobar",
     "number": 2323,
-    "street": "Thin st",
-    "city": "Richmond",
-    "state": "VA",
+    "street": "Large st",
+    "city": "Oakland",
+    "state": "CA",
     "zipcode": 23233
   },
   "shipped": false

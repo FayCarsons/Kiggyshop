@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Order {
+    pub id: u32,
     pub name: String,
     pub email: String,
     pub total: u32,
@@ -20,12 +21,12 @@ pub struct Order {
 )]
 #[diesel(table_name = crate::schema::orders)]
 pub struct TableOrder {
-    id: i32,
-    name: String,
-    email: String,
-    total: i32,
-    shipped: bool,
-    tracking_number: Option<String>,
+    pub id: i32,
+    pub name: String,
+    pub email: String,
+    pub total: i32,
+    pub shipped: bool,
+    pub tracking_number: Option<String>,
 }
 
 #[derive(Insertable)]
@@ -34,6 +35,7 @@ pub struct NewOrder<'a> {
     pub name: &'a str,
     pub email: &'a str,
     pub total: i32,
+    pub shipped: bool,
 }
 
 impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
@@ -46,6 +48,7 @@ impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
             name,
             email,
             total: *total as i32,
+            shipped: false,
         }
     }
 }
@@ -53,7 +56,7 @@ impl<'a, 'b: 'a> From<&'b Order> for NewOrder<'a> {
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum OrderFilter {
-    All,
-    Shipped,
-    Unshipped,
+    All = 0,
+    Shipped = 1,
+    Unshipped = 2,
 }

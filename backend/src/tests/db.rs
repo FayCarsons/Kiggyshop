@@ -38,6 +38,7 @@ mod tests {
                 name: &name,
                 email: "",
                 total: 30_00,
+                shipped: false,
             })
             .returning(orders::dsl::id)
             .get_result::<i32>(&mut conn);
@@ -81,6 +82,7 @@ mod tests {
                 name: &name,
                 email: "",
                 total: 30_00,
+                shipped: false,
             })
             .returning(orders::dsl::id)
             .get_result::<i32>(&mut conn);
@@ -120,6 +122,7 @@ mod tests {
                 name: &name,
                 email: "",
                 total: 30_00,
+                shipped: false,
             })
             .returning(orders::dsl::id)
             .get_result::<i32>(&mut conn);

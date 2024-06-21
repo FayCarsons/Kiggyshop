@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Shipped</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+    }
+
+    .header img {
+      max-width: 100px;
+    }
+
+    .content {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .content h1 {
+      color: #333333;
+    }
+
+    .order-details {
+      margin-top: 20px;
+    }
+
+    .order-details p {
+      margin: 5px 0;
+    }
+
+    .tracking-number {
+      font-weight: bold;
+      color: #007BFF;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #777777;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="email-container">
+    <div class="header">
+      <!-- TODO: ADD LOGO -->
+      <!-- <img src="logo.png" alt="Company Logo"> -->
+    </div>
+    <div class="content">
+      <h1>Your order has shipped!</h1>
+      <p>Dear { name },</p>
+      <p>We are pleased to inform you that your order has shipped. Here are the details:</p>
+      <div class="order-details">
+        <p><strong>Order Number: </strong>{{ id }}</p>
+        <p><strong>USPS Tracking Number: </strong> <span class="tracking-number">{{ tracking }}</span></p>
+      </div>
+      <p>You can track your package using the tracking number provided. If you have any questions or need further
+        assistance, please do not hesitate to contact us :)</p>
+      <p>Thank you for shopping with us!</p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2024 KiggyShop. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+
+</html>

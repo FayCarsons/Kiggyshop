@@ -7,7 +7,10 @@ use model::{
 
 use std::{collections::HashMap, sync::Arc};
 
-use crate::{DbConn, DbPool};
+use crate::{
+    mail::{self, shipped},
+    DbConn, DbPool, Mailer,
+};
 
 use super::stripe;
 
@@ -46,6 +49,7 @@ pub async fn get_orders(
 #[put("/orders/shipped")]
 pub async fn order_shipped(
     pool: web::Data<DbPool>,
+    mailer: web::Data<Mailer>,
     order_id: web::Path<u32>,
     tracking_number: web::Bytes,
 ) -> Result<HttpResponse> {
@@ -55,24 +59,45 @@ pub async fn order_shipped(
         .map_err(|e| error::ErrorInternalServerError(format!("Cannot connect to DB: {e}")))?;
 
     let id = order_id.into_inner() as i32;
-    web::block(move || {
-        match diesel::update(orders::table)
+    let order = web::block(move || {
+        let orders = orders::table
+            .select(order::TableOrder::as_select())
             .filter(orders::id.eq(id))
-            .filter(orders::shipped.eq(false))
-            .set((
-                orders::shipped.eq(true),
-                orders::tracking_number.eq(String::from_iter(
-                    tracking_number.into_iter().map(char::from),
-                )),
-            ))
-            .execute(&mut conn)
-        {
-            Ok(0usize) => Err("Error: Order has already been shipped/ID is invalid"),
-            _ => Ok(()),
+            .get_results::<order::TableOrder>(&mut conn)
+            .map_err(|e| format!("Cannot fetch order {id}: {e}"))?;
+
+        let [order, ..] = orders.as_slice() else {
+            return Err(format!("Order {id} not found!"));
+        };
+
+        if let order::TableOrder { shipped: false, .. } = &order {
+            match diesel::update(orders::table)
+                .filter(orders::id.eq(id))
+                .set((
+                    orders::shipped.eq(true),
+                    orders::tracking_number.eq(String::from_iter(
+                        tracking_number.into_iter().map(char::from),
+                    )),
+                ))
+                .execute(&mut conn)
+            {
+                Ok(0usize) => {
+                    Err("Error: Order has already been shipped/ID is invalid".to_string())
+                }
+                _ => Ok(order.clone()),
+            }
+        } else {
+            Err(format!("Order {id} has already been marked as shipped!"))
         }
     })
     .await?
     .map_err(error::ErrorBadRequest)?;
+
+    let shipping = shipped::Shipped::try_from(order).map_err(error::ErrorBadRequest)?;
+
+    mail::send::send_tracking(shipping, mailer.into_inner())
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -107,6 +132,7 @@ pub async fn insert_order(
             name: &name,
             total: total as i32,
             email: &email,
+            shipped: false,
         };
 
         let order_id = diesel::insert_into(orders::table)

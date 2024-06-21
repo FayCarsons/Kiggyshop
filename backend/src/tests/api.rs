@@ -58,7 +58,6 @@ mod tests {
     async fn test_delete_order() {
         let (db, pool) = create_db_pool();
 
-        // Dummy order
         let Order { name, .. } = serde_json::from_str::<Order>(include_str!("./mock_order.json"))
             .expect("Cannot deserialize mock order");
 
@@ -68,6 +67,7 @@ mod tests {
                 name: &name,
                 total: 30_00,
                 email: "",
+                shipped: false,
             }])
             .execute(&mut conn)
             .expect("Cannot insert mock order into DB");

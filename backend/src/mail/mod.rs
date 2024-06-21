@@ -1,2 +1,3 @@
+pub mod confirmation;
 pub mod send;
-pub mod templates;
+pub mod shipped;

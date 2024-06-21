@@ -12,5 +12,5 @@ insert into temp_orders (
 select id, name, email, total, shipped
 from orders;
 
-drop table order;
+drop table orders;
 alter table temp_orders rename to orders;
