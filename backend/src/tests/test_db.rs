@@ -3,8 +3,6 @@ use std::{path::PathBuf, sync::atomic::AtomicU32};
 
 static TEST_DB_COUNTER: AtomicU32 = AtomicU32::new(0);
 
-type TestConnection = diesel_logger::LoggingConnection<SqliteConnection>;
-
 pub struct TestDb {
     name: String,
     path: PathBuf,
@@ -46,10 +44,10 @@ impl TestDb {
         }
     }
 
-    pub fn connection(&self) -> TestConnection {
+    pub fn connection(&self) -> SqliteConnection {
         let sqconn = SqliteConnection::establish(self.path.to_str().unwrap());
         assert!(sqconn.is_ok());
-        diesel_logger::LoggingConnection::new(sqconn.unwrap())
+        sqconn.expect("Cannot create database connection")
     }
 
     pub fn path(&self) -> PathBuf {
