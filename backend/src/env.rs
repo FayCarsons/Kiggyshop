@@ -1,15 +1,15 @@
 #[derive(Clone, Debug, Default)]
-pub struct Env<'a> {
-    pub database_url: &'a str,
-    pub stripe_secret: &'a str,
-    pub stripe_key: &'a str,
-    pub completion_redirect: &'a str,
-    pub mail_user: &'a str,
-    pub mail_pass: &'a str,
+pub struct Env {
+    pub database_url: &'static str,
+    pub stripe_secret: &'static str,
+    pub stripe_key: &'static str,
+    pub completion_redirect: &'static str,
+    pub mail_user: &'static str,
+    pub mail_pass: &'static str,
 }
 
-impl Env<'static> {
-    pub fn new() -> Result<Env<'static>, String> {
+impl Env {
+    pub const fn new() -> Env {
         #[cfg(any(debug_assertions, test))]
         {
             // We are in development
@@ -19,14 +19,14 @@ impl Env<'static> {
             let completion_redirect = dotenvy_macro::dotenv!("COMPLETION_REDIRECT");
             let mail_user = dotenvy_macro::dotenv!("MAIL_USER");
             let mail_pass = dotenvy_macro::dotenv!("MAIL_PASS");
-            Ok(Self {
+            Self {
                 database_url,
                 stripe_secret,
                 stripe_key,
                 completion_redirect,
                 mail_user,
                 mail_pass,
-            })
+            }
         }
         #[cfg(not(any(debug_assertions, test)))]
         {

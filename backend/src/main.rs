@@ -26,17 +26,16 @@ pub type DbConn = r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
 pub type Mailer = AsyncSmtpTransport<Tokio1Executor>;
 
 const ADDRESS_PORT: (&str, u16) = ("0.0.0.0", 3000);
+pub const ENV: Env = Env::new();
 
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
     env_logger::init();
 
-    let env = Env::new().expect("ENV ERROR: ");
-
-    let manager = r2d2::ConnectionManager::<SqliteConnection>::new(env.database_url);
+    let manager = r2d2::ConnectionManager::<SqliteConnection>::new(ENV.database_url);
     let pool = r2d2::Pool::builder()
         .build(manager)
-        .expect("INVALID DB URL // DB POOL CANNOT BE BUILT");
+        .expect("Error initializing DB pool");
 
     let (mail_user, mail_pass) = {
         #[cfg(any(debug_assertions, test))]
@@ -65,7 +64,7 @@ async fn main() -> Result<(), std::io::Error> {
         App::new()
             .wrap(logger)
             .app_data(web::Data::new(pool.clone()))
-            .app_data(web::Data::new(env.clone()))
+            .app_data(web::Data::new(ENV.clone()))
             .app_data(web::Data::new(mailer.clone()))
             .service(
                 web::scope("/api")

@@ -23,7 +23,7 @@ use crate::{
     api::{order::insert_order, stock::dec_items},
     mail,
     utils::print_red,
-    DbPool, Env, Mailer,
+    DbPool, Mailer, ENV,
 };
 
 use model::{address::Address, ItemId, Quantity};
@@ -51,7 +51,6 @@ pub struct UserData {
 pub async fn checkout(
     cart: Json<HashMap<ItemId, Quantity>>,
     pool: web::Data<DbPool>,
-    env: web::Data<Env<'_>>,
 ) -> Result<HttpResponse> {
     let ids = cart.keys().copied().collect::<Vec<ItemId>>();
     let items = get_matching_ids(ids, pool.into_inner()).await?;
@@ -69,7 +68,7 @@ pub async fn checkout(
         })
         .collect::<HashMap<ItemId, Item>>();
 
-    let client = Client::new(env.stripe_secret);
+    let client = Client::new(ENV.stripe_secret);
 
     let mut product_price_pairs = Vec::<(Price, u64)>::with_capacity(item_map.keys().len());
 
@@ -150,7 +149,7 @@ pub async fn checkout(
         create_payment_link.after_completion = Some(CreatePaymentLinkAfterCompletion {
             type_: stripe::CreatePaymentLinkAfterCompletionType::Redirect,
             redirect: Some(CreatePaymentLinkAfterCompletionRedirect {
-                url: env.completion_redirect.to_string(),
+                url: ENV.completion_redirect.to_string(),
             }),
             hosted_confirmation: None,
         });
@@ -178,10 +177,9 @@ pub async fn webhook(
     req: HttpRequest,
     payload: web::Bytes,
     pool: web::Data<DbPool>,
-    env: web::Data<Env<'_>>,
     mailer: web::Data<Mailer>,
 ) -> Result<HttpResponse> {
-    parse_webhook(req, payload, pool.into_inner(), env.into_inner(), mailer)
+    parse_webhook(req, payload, pool.into_inner(), mailer)
         .await
         .map(|_| HttpResponse::Ok().finish())
 }
@@ -191,7 +189,6 @@ pub async fn parse_webhook(
     req: HttpRequest,
     payload: web::Bytes,
     pool: Arc<DbPool>,
-    env: Arc<Env<'_>>,
     mailer: web::Data<Mailer>,
 ) -> Result<()> {
     print_red("", "CURRENTLY IN 'handle_webhook'");
@@ -202,7 +199,7 @@ pub async fn parse_webhook(
 
     let stripe_sig = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
 
-    let event = Webhook::construct_event(payload_str, stripe_sig, env.stripe_key);
+    let event = Webhook::construct_event(payload_str, stripe_sig, ENV.stripe_key);
 
     if let Ok(event) = event {
         if let EventType::CheckoutSessionCompleted = event.type_ {
