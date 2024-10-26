@@ -38,7 +38,7 @@ productPage id { title, description, kind, quantity } =
                 ]
             , if quantity > 0 then
                 button
-                    [ Attr.class "bg-gradient-to-l from-yellow-200 to-kiggypink brightness-100 text-white py-2 px-4 md:px-6 rounded transiition duration-300 ease-in-out hover:brightness-90 focus:ring focus:ring-kiggypink"
+                    [ Attr.class "bg--kiggypink brightness-100 text-white py-2 px-4 md:px-6 rounded transiition duration-300 ease-in-out hover:brightness-90 focus:ring focus:ring-kiggypink"
                     , id |> Cart.Inc |> Msg.Cart |> onClick
                     ]
                     [ text "add to cart" ]
