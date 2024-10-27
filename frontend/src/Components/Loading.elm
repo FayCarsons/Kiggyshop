@@ -4,8 +4,8 @@ import Html exposing (Html, div, p, text)
 import Html.Attributes as Attr
 
 
-loadingPage : () -> Html msg
-loadingPage _ =
+loadingPage : Html msg
+loadingPage =
     div [ Attr.class "flex flex-col items-center justify-center h-screen" ]
         [ div [ Attr.class "animate-spin rounded-full h-16 w-16 border-t-4 border-kiggygreen border-solid" ]
             []
@@ -14,6 +14,6 @@ loadingPage _ =
         ]
 
 
-errorPage : () -> Html msg
-errorPage _ =
+errorPage : Html msg
+errorPage =
     div [] [ text "oh noes :0" ]

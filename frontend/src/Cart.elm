@@ -1,8 +1,9 @@
 module Cart exposing (..)
 
 import Dict exposing (Dict)
-import Json.Decode as JD
-import Json.Encode as JE
+import Json.Decode as Decode
+import Json.Encode as Encode
+import Product exposing (Product)
 
 
 type alias Id =
@@ -17,36 +18,44 @@ type alias Cart =
     Dict Id Quantity
 
 
-type CartAction
+type Action
     = Inc Int
     | Dec Int
     | Remove Int
     | Clear
 
 
-type alias CartResult =
-    Result JD.Error Cart
+encoder : Cart -> Encode.Value
+encoder cart =
+    Encode.dict String.fromInt Encode.int cart
 
 
-cartEncoder : Cart -> JE.Value
-cartEncoder cart =
-    JE.dict String.fromInt JE.int cart
+getPrice : Dict Int Product -> ( Product.ID, Quantity ) -> Maybe Int
+getPrice stock ( id, qty ) =
+    Dict.get id stock |> Maybe.map (\product -> Product.kindToPrice product.kind * qty)
 
 
-cartDecoder : JD.Decoder Cart
-cartDecoder =
-    JD.keyValuePairs JD.int
-        |> JD.andThen
+getTotal : Cart -> Dict Int Product -> Int
+getTotal cart stock =
+    Dict.toList cart
+        |> List.filterMap (getPrice stock)
+        |> List.sum
+
+
+decoder : Decode.Decoder Cart
+decoder =
+    Decode.keyValuePairs Decode.int
+        |> Decode.andThen
             (\pairs ->
                 let
-                    addPair : ( String, Int ) -> JD.Decoder Cart -> JD.Decoder Cart
-                    addPair ( k, v ) decoder =
+                    addPair : ( String, Int ) -> Decode.Decoder Cart -> Decode.Decoder Cart
+                    addPair ( k, v ) decode =
                         case String.toInt k of
                             Just key ->
-                                JD.map (Dict.insert key v) decoder
+                                Decode.map (Dict.insert key v) decode
 
                             Nothing ->
-                                JD.fail "Key must be an integer"
+                                Decode.fail "Key must be an integer"
                 in
-                List.foldr addPair (JD.succeed Dict.empty) pairs
+                List.foldr addPair (Decode.succeed Dict.empty) pairs
             )

@@ -1,68 +1,19 @@
 module Stock exposing (..)
 
+import Cart exposing (Quantity)
 import Dict exposing (Dict)
 import Http
 import Json.Decode as JD
-
-
-type ProductKind
-    = BigPrint
-    | SmallPrint
-    | Button
-
-
-type alias Product =
-    { title : String
-    , description : String
-    , kind : ProductKind
-    , quantity : Int
-    }
-
-
-type alias ItemId =
-    Int
+import Product exposing (Kind(..), Product)
 
 
 type alias Stock =
-    Dict ItemId Product
-
-
-type alias StockResult =
-    Result Http.Error Stock
-
-
-kindDecoder : JD.Decoder ProductKind
-kindDecoder =
-    JD.string
-        |> JD.andThen
-            (\str ->
-                case str of
-                    "BigPrint" ->
-                        JD.succeed BigPrint
-
-                    "SmallPrint" ->
-                        JD.succeed SmallPrint
-
-                    "Button" ->
-                        JD.succeed Button
-
-                    other ->
-                        JD.fail <| "Unknown product type: " ++ other
-            )
-
-
-productDecoder : JD.Decoder Product
-productDecoder =
-    JD.map4 Product
-        (JD.field "title" JD.string)
-        (JD.field "description" JD.string)
-        (JD.field "kind" kindDecoder)
-        (JD.field "quantity" JD.int)
+    Dict Product.ID Product
 
 
 stockDecoder : JD.Decoder Stock
 stockDecoder =
-    JD.keyValuePairs productDecoder
+    JD.keyValuePairs Product.decoder
         |> JD.andThen
             (\pairs ->
                 let
@@ -79,19 +30,8 @@ stockDecoder =
             )
 
 
-kindToPrice : ProductKind -> Int
-kindToPrice kind =
-    case kind of
-        BigPrint ->
-            20
-
-        SmallPrint ->
-            7
-
-        Button ->
-            3
+findItem : Int -> Stock -> Maybe Product
+findItem itemId stock =
+    Dict.get itemId stock
 
 
-stringOfPrice : Int -> String
-stringOfPrice price =
-    "$" ++ String.fromInt price

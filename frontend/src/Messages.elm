@@ -2,7 +2,7 @@ module Messages exposing (..)
 
 import Cart exposing (Cart)
 import Http
-import Stock
+import Stock exposing (Stock)
 import Url exposing (Url)
 
 
@@ -18,7 +18,7 @@ type Route
     | Error
 
 
-type NavMsg
+type Nav
     = Req Url
     | Change Url
     | GetStripe
@@ -26,13 +26,13 @@ type NavMsg
 
 
 type Loading
-    = GotCart ( Cart, Stock.StockResult )
-    | MakeCart Stock.StockResult
+    = GotCart ( Cart, Result Http.Error Stock )
+    | MakeCart (Result Http.Error Stock)
 
 
 type Msg
     = Load Loading
-    | Cart Cart.CartAction
+    | Cart Cart.Action
     | FlipMenu
-    | Nav NavMsg
+    | Nav Nav
     | NoOp

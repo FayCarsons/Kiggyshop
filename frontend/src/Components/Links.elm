@@ -5,12 +5,12 @@ import Html exposing (Html, a, div)
 import Html.Attributes as Attr
 
 
-type LinkSize
+type Size
     = Small
     | Large
 
 
-links : { size : LinkSize, class : String } -> Html msg
+links : { size : Size, class : String } -> Html msg
 links { size, class } =
     let
         ( svgSize, svgClass ) =
@@ -29,7 +29,6 @@ links { size, class } =
         [ a [ Attr.href "https://www.instagram.com/k1ggy", Attr.target "_blank", Attr.rel "noopener noreeferrer" ]
             [ instagram props ]
         , a [ Attr.href "https://www.instagram.com/k1ggy", Attr.target "_blank", Attr.rel "noopener noreeferrer" ]
-            -- And here and in the rest ! Don't forget :^)
             [ twitter props ]
         , a [ Attr.href "https://www.instagram.com/k1ggy", Attr.target "_blank", Attr.rel "noopener noreeferrer" ]
             [ linkedin props ]

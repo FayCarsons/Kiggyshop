@@ -1,6 +1,6 @@
 module Components.Footer exposing (footer)
 
-import Components.Links exposing (LinkSize(..), links)
+import Components.Links exposing (Size(..), links)
 import Html exposing (Html)
 import Html.Attributes as Attr
 

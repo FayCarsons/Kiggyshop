@@ -2,20 +2,20 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
-import Cart exposing (Cart)
+import Cart exposing (Cart, Action(..))
 import Components.Checkout exposing (checkout)
 import Components.Gallery exposing (gallery)
 import Components.Icons exposing (Palette(..))
 import Components.Loading exposing (errorPage, loadingPage)
 import Components.Product exposing (product)
 import Dict
-import Html exposing (Html, text)
+import Html exposing (text)
 import Html.Lazy
 import Http
-import Json.Decode as JD
-import Json.Encode as JE
+import Json.Decode as Decode
+import Json.Encode as Encode
 import Lib exposing (..)
-import Messages exposing (Loading(..), Menu(..), Msg(..), NavMsg(..), Route(..))
+import Messages exposing (Loading(..), Menu(..), Msg(..), Nav(..), Route(..))
 import Ports exposing (setCart)
 import Stock exposing (Stock)
 import Url exposing (Url)
@@ -70,25 +70,25 @@ init : Maybe String -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init maybeCart url key =
     let
         tryCart =
-            maybeCart |> Maybe.withDefault "" |> JD.decodeString Cart.cartDecoder
+            maybeCart |> Maybe.withDefault "" |> Decode.decodeString Cart.decoder
     in
     let
         cmd =
             getStockWithCart (Result.withDefault Dict.empty tryCart)
     in
-    ( parseRoute url |> Page key |> Uninit, cmd )
+    ( Uninit (Page key (parseRoute url)), cmd )
 
 
 onUrlChange : Url -> Msg
 onUrlChange url =
-    Change url |> Nav
+    Nav (Change url)
 
 
 onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest req =
     case req of
         Browser.Internal url ->
-            Req url |> Nav
+            Nav (Req url)
 
         Browser.External _ ->
             NoOp
@@ -97,15 +97,14 @@ onUrlRequest req =
 getStockWithCart : Cart -> Cmd Msg
 getStockWithCart jsonCart =
     Http.get
-        {- Http requests are being proxied by Vite to the Rust backend -}
         { url = "/api/stock"
-        , expect = Http.expectJson (\res -> ( jsonCart, res ) |> GotCart |> Load) Stock.stockDecoder
+        , expect = Http.expectJson (\res -> Load (GotCart ( jsonCart, res ))) Stock.stockDecoder
         }
 
 
 updateCart : (Int -> Int) -> Int -> AppState -> Maybe AppState
 updateCart op itemId ({ shop } as state) =
-    findItem itemId shop.stock
+    Stock.findItem itemId shop.stock
         |> Maybe.map
             (\currItem ->
                 let
@@ -116,43 +115,43 @@ updateCart op itemId ({ shop } as state) =
             )
 
 
-matchStateCommand : AppState -> Maybe AppState -> ( Model, Cmd Msg )
-matchStateCommand old new =
+transition : AppState -> Maybe AppState -> ( Model, Cmd Msg )
+transition old new =
     case new of
         Just state ->
-            ( Success state, setCart (Cart.cartEncoder state.shop.cart) )
+            ( Success state, setCart (Cart.encoder state.shop.cart) )
 
         Nothing ->
             ( Success old, Cmd.none )
 
 
-matchCartAction : Cart.CartAction -> Model -> ( Model, Cmd Msg )
-matchCartAction action model =
+handleCartAction : Cart.Action -> Model -> ( Model, Cmd Msg )
+handleCartAction action model =
     case model of
         Success ({ shop } as state) ->
             case action of
-                Cart.Inc item ->
-                    updateCart inc item state |> matchStateCommand state
+                Inc item ->
+                    transition state (updateCart inc item state)
 
-                Cart.Dec item ->
-                    updateCart dec item state |> matchStateCommand state
+                Dec item ->
+                    transition state (updateCart dec item state)
 
-                Cart.Remove item ->
+                Remove item ->
                     let
                         newCart =
                             Dict.remove item shop.cart
                     in
-                    ( Success { state | shop = { shop | cart = newCart } }, setCart (Cart.cartEncoder newCart) )
+                    ( Success { state | shop = { shop | cart = newCart } }, setCart (Cart.encoder newCart) )
 
-                Cart.Clear ->
-                    ( Success { state | shop = { shop | cart = Dict.empty } }, setCart JE.null )
+                Clear ->
+                    ( Success { state | shop = { shop | cart = Dict.empty } }, setCart Encode.null )
 
         _ ->
             ( model, Cmd.none )
 
 
-matchLoadAction : Loading -> Page -> ( Model, Cmd Msg )
-matchLoadAction msg page =
+handleLoadAction : Loading -> Page -> ( Model, Cmd Msg )
+handleLoadAction msg page =
     case msg of
         GotCart ( cart, maybeStock ) ->
             case maybeStock of
@@ -189,14 +188,14 @@ flipMenu state =
             Open
 
 
-matchMsg : Msg -> Model -> Page -> ( Model, Cmd Msg )
-matchMsg msg model routing =
+handleMsg : Msg -> Model -> Page -> ( Model, Cmd Msg )
+handleMsg msg model routing =
     case msg of
         Load loadMsg ->
-            matchLoadAction loadMsg routing
+            handleLoadAction loadMsg routing
 
         Cart action ->
-            matchCartAction action model
+            handleCartAction action model
 
         FlipMenu ->
             case model of
@@ -223,21 +222,19 @@ matchMsg msg model routing =
                             in
                             ( model, postCheckout state.shop.cart )
 
-                        GotStripe res ->
+                        GotStripe (Ok url) ->
                             let
                                 _ =
-                                    Debug.log "Got stripe URL post response" res
+                                    Debug.log "Got stripe URL post response" url
                             in
-                            case res of
-                                Ok s ->
-                                    ( model, Nav.load s )
+                            ( model, Nav.load url )
 
-                                Err e ->
-                                    let
-                                        _ =
-                                            Debug.log "Checkout Err" e
-                                    in
-                                    ( model, Cmd.none )
+                        GotStripe (Err e) ->
+                            let
+                                _ =
+                                    Debug.log "Checkout Error" e
+                            in
+                            ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -253,10 +250,10 @@ update msg model =
             ( Failure, Nav.reload )
 
         Success { page } ->
-            matchMsg msg model page
+            handleMsg msg model page
 
         Uninit route ->
-            matchMsg msg model route
+            handleMsg msg model route
 
 
 view : Model -> Browser.Document Msg
@@ -265,34 +262,29 @@ view model =
     , body =
         (case model of
             Failure ->
-                errorPage ()
+                errorPage
 
             Success state ->
-                matchPage state
+                case state.page.route of
+                    Gallery ->
+                        Html.Lazy.lazy2 gallery state.shop.stock state.view
+
+                    Item id ->
+                        case Dict.get id state.shop.stock of
+                            Just item ->
+                                Html.Lazy.lazy3 product id item state.view
+
+                            Nothing ->
+                                errorPage
+
+                    Checkout ->
+                        Html.Lazy.lazy checkout state.shop
+
+                    Error ->
+                        text "Unimplemented!"
 
             _ ->
-                loadingPage ()
+                loadingPage
         )
             |> List.singleton
     }
-
-
-matchPage : AppState -> Html Msg
-matchPage ({ page } as state) =
-    case page.route of
-        Gallery ->
-            Html.Lazy.lazy2 gallery state.shop.stock state.view
-
-        Item id ->
-            case Dict.get id state.shop.stock of
-                Just item ->
-                    Html.Lazy.lazy3 product id item state.view
-
-                Nothing ->
-                    errorPage ()
-
-        Checkout ->
-            Html.Lazy.lazy checkout state.shop
-
-        Error ->
-            text "Unimplemented!"
