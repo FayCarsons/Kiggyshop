@@ -41,7 +41,7 @@ async fn test_confirmation_email() {
         })
         .collect();
 
-    let user = stripe::UserData {
+    let user = stripe::User {
         name,
         address: Some(address),
         email,

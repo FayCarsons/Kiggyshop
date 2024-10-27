@@ -33,6 +33,7 @@ pub async fn get_orders(
             Shipped => select
                 .filter(orders::shipped.eq(true))
                 .get_results(&mut conn),
+
             Unshipped => select
                 .filter(orders::shipped.eq(false))
                 .get_results(&mut conn),
@@ -60,17 +61,13 @@ pub async fn order_shipped(
 
     let id = order_id.into_inner() as i32;
     let order = web::block(move || {
-        let orders = orders::table
+        let order: order::TableOrder = orders::table
             .select(order::TableOrder::as_select())
             .filter(orders::id.eq(id))
-            .get_results::<order::TableOrder>(&mut conn)
+            .get_result::<order::TableOrder>(&mut conn)
             .map_err(|e| format!("Cannot fetch order {id}: {e}"))?;
 
-        let [order, ..] = orders.as_slice() else {
-            return Err(format!("Order {id} not found!"));
-        };
-
-        if let order::TableOrder { shipped: false, .. } = &order {
+        if !order.shipped {
             match diesel::update(orders::table)
                 .filter(orders::id.eq(id))
                 .set((
@@ -81,9 +78,7 @@ pub async fn order_shipped(
                 ))
                 .execute(&mut conn)
             {
-                Ok(0usize) => {
-                    Err("Error: Order has already been shipped/ID is invalid".to_string())
-                }
+                Ok(0) => Err("Error: Order has already been shipped/ID is invalid".to_string()),
                 _ => Ok(order.clone()),
             }
         } else {

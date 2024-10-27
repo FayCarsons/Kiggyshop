@@ -19,6 +19,7 @@ impl Env {
             let completion_redirect = dotenvy_macro::dotenv!("COMPLETION_REDIRECT");
             let mail_user = dotenvy_macro::dotenv!("MAIL_USER");
             let mail_pass = dotenvy_macro::dotenv!("MAIL_PASS");
+
             Self {
                 database_url,
                 stripe_secret,
@@ -37,14 +38,15 @@ impl Env {
             let completion_redirect = std::env!("COMPLETION_REDIRECT");
             let mail_user = std::env!("MAIL_USER");
             let mail_pass = std::env!("MAIL_PASS");
-            Ok(Self {
+
+            Self {
                 database_url,
                 stripe_secret,
                 stripe_key,
                 completion_redirect,
                 mail_user,
                 mail_pass,
-            })
+            }
         }
     }
 }

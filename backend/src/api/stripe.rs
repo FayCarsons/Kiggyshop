@@ -38,7 +38,7 @@ pub struct Item {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct UserData {
+pub struct User {
     pub name: String,
     pub address: Option<Address>,
     pub email: String,
@@ -319,7 +319,7 @@ async fn handle_checkout(
         .get()
         .map_err(|e| error::ErrorInternalServerError(format!("Cannot get DB connection: {e}")))?;
 
-    let user_data = UserData {
+    let user_data = User {
         name: name.clone().to_string(),
         address: Some((*address).clone()),
         email: email.to_string(),

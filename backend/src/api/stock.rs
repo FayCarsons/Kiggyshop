@@ -53,10 +53,11 @@ pub async fn get_total(cart: Arc<model::CartMap>, pool: Arc<DbPool>) -> Result<u
                 item::Kind::SmallPrint => 7_00,
                 item::Kind::Button => 3_00,
             };
+
             Ok(total + price * qty)
         } else {
             Err(error::ErrorInternalServerError(
-                "<fn GET_TOTAL>\nError fetching total - Item in cart not present in kind map",
+                "<api::stock::get_total>\nError fetching total - Item in cart not present in kind map",
             ))
         }
     })

@@ -1,4 +1,4 @@
-use crate::{api::stripe::UserData, Mailer};
+use crate::{api::stripe::User, Mailer};
 use actix_web::Result;
 
 use askama::Template;
@@ -12,7 +12,7 @@ use super::{confirmation, shipped};
 
 use std::sync::Arc;
 
-pub async fn send_confirmation(user: UserData, mailer: Arc<Mailer>) -> Result<(), String> {
+pub async fn send_confirmation(user: User, mailer: Arc<Mailer>) -> Result<(), String> {
     let confirmation = confirmation::Confirmation::from(&user);
     let html = SinglePart::html(confirmation.render().unwrap());
     let plaintext = SinglePart::plain(confirmation.render_plaintext());
