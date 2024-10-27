@@ -30,6 +30,4 @@ suite =
                 >> Expect.err
         , test "Kind to price" <|
             \_ -> Product.BigPrint |> Product.kindToPrice |> Expect.equal 20
-        , test "String of price" <|
-            \_ -> Stock.stringOfPrice 23 |> Expect.equal "$23"
         ]

@@ -1,4 +1,4 @@
-module Product exposing (ID, Kind(..), Product, decoder, formattedPrice, kindToPrice)
+module Product exposing (ID, Kind(..), Product, decoder, formattedPrice, kindToPrice, kindDecoder)
 
 import Json.Decode as Decode
 
